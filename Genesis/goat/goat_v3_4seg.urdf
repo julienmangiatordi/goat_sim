@@ -1,0 +1,999 @@
+<?xml version="1.0"?>
+<!--
+  GOAT Robot URDF — Version 3 (4 Segments Per Ring)
+  
+  REDESIGN: Reduced from 16 segments (8 per ring) to 4 per ring
+  This better approximates the real structure: 2 long bendable tubes per ring,
+  clipped at 4 points (lens positions).
+
+  
+  ROB SPECIFICATIONS FROM PAPER
+  
+  RINGS (Frame):
+    • 2 stacked rings with 4 straight fiberglass rods each
+    • Rod length: 2 m per rod
+    • Rod diameter: 5 mm
+    • Circumference per ring: 4 m → Radius R = 0.6366 m
+    • Separation (Z): ~0.10 m (estimated)
+  
+  WHEELS:
+    • 4 rimless wheels total
+    • Spoke length (effective radius): 25 cm = 0.25 m
+    • Number of spokes per wheel: 10
+    • Spoke diameter: 8 mm (fiberglass)
+    • Hub: 3D-printed
+  
+  CONNECTORS (Chevrons + Rigid Lens):
+    • 8 equidistant connection points at 45° intervals (on XY circumference)
+    • 4 rigid connectors: wheel mount points (north/south/east/west at R=0.6366m)
+    • 4 flexible pivot points: tendon routing points
+    • Rigid connector dimensions: 2 × 8 cm rods at 120° opening angle
+  
+  TENDON SYSTEM:
+    • 2 orthogonal tendons (cables)
+    • Material: 0.6 mm braided polyethylene fishing line
+    • Routing: payload center → connector eyelet → opposite connector → back
+    • Motor torque: 40 kg·cm each
+  
+  MASS DISTRIBUTION:
+    • Total robot mass: 2.8 kg
+    • Payload (central housing + electronics): 1.8 kg
+    • Frame + wheels + connectors: 1.0 kg
+      - 8 arc segments: 0.8 kg (0.1 kg each)
+      - 4 wheels: 0.2 kg (0.05 kg each)
+  
+  PERFORMANCE:
+    • Nominal width in circular config: 54 cm (2×R = 1.273 m in diameter)
+    • Can traverse gaps 10% smaller than nominal width (compliance)
+    • Optimal driving aspect ratio (r=l₁/l₂): 2.0–2.2
+    • Max speed at r≈2.0: 1.4 m/s
+    • Battery: 3S LiPo 1600 mAh
+    • Runtime: ~30 min driving / ~2 h rolling
+    • Power draw: ~39 W avg (driving), ~90% less for rolling
+  
+
+-->
+<robot name="goat">
+
+  <material name="fiberglass"><color rgba="0.95 0.85 0.10 1.0"/></material>
+  <material name="payload_box"><color rgba="0.10 0.35 0.70 1.0"/></material>
+  <material name="wheel_dark"><color rgba="0.12 0.12 0.12 1.0"/></material>
+  <material name="connector"><color rgba="0.80 0.30 0.10 1.0"/></material>
+
+  <!-- 
+       PAYLOAD — base link, 1.8 kg
+  -->
+  <link name="payload">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.20 0.14 0.08"/></geometry>
+      <material name="payload_box"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.20 0.14 0.08"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.80"/>
+      <inertia ixx="0.003940" ixy="0" ixz="0"
+               iyy="0.005150" iyz="0"
+               izz="0.006720"/>
+    </inertial>
+  </link>
+
+  <!-- 
+       RING 1 — 4 arc segments in XY plane (Z=0)
+       90° arcs instead of 45°
+       Chord length L = 0.9024 m
+       Rod radius = 2.5 mm
+       Mass per segment = 0.125 kg (doubled from 0.0625)
+
+       Ring 1 node positions (world, for reference):
+         node0: (R, 0)           = (0.6366, 0)
+         node1: (0, R)           = (0, 0.6366)
+         node2: (-R, 0)          = (-0.6366, 0)
+         node3: (0, -R)          = (0, -0.6366)
+
+       Arc centers (segment midpoints):
+         arc1_1: midpoint(n0, n1) = (0.3183, 0.3183)
+         arc1_2: midpoint(n1, n2) = (-0.3183, 0.3183)
+         arc1_3: midpoint(n2, n3) = (-0.3183, -0.3183)
+         arc1_4: midpoint(n3, n0) = (0.3183, -0.3183)
+-->
+
+  <link name="arc1_1">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+      <material name="fiberglass"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.1"/>
+      <!-- Thin rod along X-axis (after rotation): ixx=m*r², iyy=m*L²/12, izz=m*L²/12 -->
+      <!-- r=0.0025m, L=0.9024m: ixx=0.1×(0.0025)²=6.25e-7, iyy/izz=0.1×(0.9024)²/12=0.00678626 -->
+      <inertia ixx="0.00000062" ixy="0" ixz="0"
+               iyy="0.0067863" iyz="0"
+               izz="0.0067863"/>
+    </inertial>
+  </link>
+
+  <link name="arc1_2">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+      <material name="fiberglass"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="0.00000062" ixy="0" ixz="0"
+               iyy="0.0067863" iyz="0"
+               izz="0.0067863"/>
+    </inertial>
+  </link>
+
+  <link name="arc1_3">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+      <material name="fiberglass"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="0.00000062" ixy="0" ixz="0"
+               iyy="0.0067863" iyz="0"
+               izz="0.0067863"/>
+    </inertial>
+  </link>
+
+  <link name="arc1_4">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+      <material name="fiberglass"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="0.00000062" ixy="0" ixz="0"
+               iyy="0.0067863" iyz="0"
+               izz="0.0067863"/>
+    </inertial>
+  </link>
+
+  <!--
+    Ring 1 joint chain: payload → arc1_1 → arc1_2 → arc1_3 → arc1_4
+    Each joint connects consecutive segments (90° apart around ring).
+    
+    Joint positions are at arc start nodes (relative to parent frame).
+    Arc visual centers are offset to midpoint of each chord.
+  -->
+
+  <!-- payload → arc1_1: joint at midpoint(n0, n1) = (0.3183, 0.3183) -->
+  <joint name="j_payload_arc1_1" type="revolute">
+    <parent link="payload"/>
+    <child  link="arc1_1"/>
+    <origin xyz="0.3183 0.3183 0.0000" rpy="0 0 0.7854"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.0" upper="1.0" effort="10.0" velocity="5.0"/>
+    <dynamics damping="0.5" friction="0.02"/>
+  </joint>
+
+  <!-- arc1_1 → arc1_2 → arc1_3 → arc1_4 now connected via connectors
+       (old direct joints removed to avoid multi-parent conflict) -->
+
+  <!--
+       RING 2 — 4 arc segments, Z=0.10m, 45° offset
+       
+       Ring 2 node positions (45° offset from ring 1):
+         m0: (R*cos45°, R*sin45°)    = (0.4502, 0.4502)
+         m1: (-R*sin45°, R*cos45°)   = (-0.4502, 0.4502)
+         m2: (-R*cos45°, -R*sin45°)  = (-0.4502, -0.4502)
+         m3: (R*sin45°, -R*cos45°)   = (0.4502, -0.4502)
+
+       Arc centers (segment midpoints):
+         arc2_1: midpoint(m0, m1) = (0, 0.4502)
+         arc2_2: midpoint(m1, m2) = (-0.4502, 0)
+         arc2_3: midpoint(m2, m3) = (0, -0.4502)
+         arc2_4: midpoint(m3, m0) = (0.4502, 0)
+-->
+
+  <link name="arc2_1">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+      <material name="fiberglass"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="0.00000062" ixy="0" ixz="0"
+               iyy="0.0067863" iyz="0"
+               izz="0.0067863"/>
+    </inertial>
+  </link>
+
+  <link name="arc2_2">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+      <material name="fiberglass"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="0.00000062" ixy="0" ixz="0"
+               iyy="0.0067863" iyz="0"
+               izz="0.0067863"/>
+    </inertial>
+  </link>
+
+  <link name="arc2_3">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+      <material name="fiberglass"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="0.00000062" ixy="0" ixz="0"
+               iyy="0.0067863" iyz="0"
+               izz="0.0067863"/>
+    </inertial>
+  </link>
+
+  <link name="arc2_4">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+      <material name="fiberglass"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.0025" length="0.9024"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.1"/>
+      <inertia ixx="0.00000062" ixy="0" ixz="0"
+               iyy="0.0067863" iyz="0"
+               izz="0.0067863"/>
+    </inertial>
+  </link>
+
+  <!-- payload → arc2_1: child center at (0, 0.4502, 0.10) -->
+  <joint name="j_payload_arc2_1" type="revolute">
+    <parent link="payload"/>
+    <child  link="arc2_1"/>
+    <origin xyz="0.0000 0.4502 0.1000" rpy="0 0 1.5708"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.0" upper="1.0" effort="10.0" velocity="5.0"/>
+    <dynamics damping="0.5" friction="0.02"/>
+  </joint>
+
+  <!--  arc2_1 → arc2_2 → arc2_3 → arc2_4 now connected via connectors
+       (old direct joints removed to avoid multi-parent conflict) -->
+
+  <!-- 
+       LENS CONNECTORS (×4)
+       
+       SPECIFICATION (paper):
+         • 4 rigid connectors at wheel positions form the "lens" structure
+         • 4 flexible pivot points for tendon routing (separate from these)
+         • Each rigid connector: 2 rods of 8 cm length in 120° opening angle
+         • Material: 3D-printed central hub with fiberglass rod attachment
+         • Purpose: Connect the two rings rigidly, mount wheels, constrain morphology
+       
+       POSITIONING:
+         These 4 rigid connection points are placed at the cardinal directions
+         (where the two rings' radial lines align best for structural strength):
+         FL (Front-Left):  ( 0.6366,  0.0000, 0.05) → East axis
+         FR (Front-Right): ( 0.0000,  0.6366, 0.05) → North axis
+         RL (Rear-Left):   (-0.6366,  0.0000, 0.05) → West axis
+         RR (Rear-Right):  ( 0.0000, -0.6366, 0.05) → South axis
+       
+       JOINT TYPE: Fixed (prevents relative motion between rings at these points)
+       This creates 4 "convex lens" shapes between the two rings, essential for
+       the morphing behavior described in the paper (Fig. 2B).
+ -->
+
+  <link name="lens_FL">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.08 0.02"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.08 0.02"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.010"/>
+      <inertia ixx="0.000011" ixy="0" ixz="0"
+               iyy="0.000011" iyz="0"
+               izz="0.000011"/>
+    </inertial>
+  </link>
+  <joint name="lens_FL_joint" type="fixed">
+    <parent link="payload"/>
+    <child  link="lens_FL"/>
+    <origin xyz="0.6366 0.0000 0.0500" rpy="0 0 0"/>
+  </joint>
+
+  <link name="lens_FR">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.08 0.02"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.08 0.02"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.010"/>
+      <inertia ixx="0.000011" ixy="0" ixz="0"
+               iyy="0.000011" iyz="0"
+               izz="0.000011"/>
+    </inertial>
+  </link>
+  <joint name="lens_FR_joint" type="fixed">
+    <parent link="payload"/>
+    <child  link="lens_FR"/>
+    <origin xyz="0.0000 0.6366 0.0500" rpy="0 0 0"/>
+  </joint>
+
+  <link name="lens_RL">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.08 0.02"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.08 0.02"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.010"/>
+      <inertia ixx="0.000011" ixy="0" ixz="0"
+               iyy="0.000011" iyz="0"
+               izz="0.000011"/>
+    </inertial>
+  </link>
+  <joint name="lens_RL_joint" type="fixed">
+    <parent link="payload"/>
+    <child  link="lens_RL"/>
+    <origin xyz="-0.6366 0.0000 0.0500" rpy="0 0 0"/>
+  </joint>
+
+  <link name="lens_RR">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.08 0.02"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.08 0.02"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.010"/>
+      <inertia ixx="0.000011" ixy="0" ixz="0"
+               iyy="0.000011" iyz="0"
+               izz="0.000011"/>
+    </inertial>
+  </link>
+  <joint name="lens_RR_joint" type="fixed">
+    <parent link="payload"/>
+    <child  link="lens_RR"/>
+    <origin xyz="0.0000 -0.6366 0.0500" rpy="0 0 0"/>
+  </joint>
+
+  <!--
+       RIGIDITY CONNECTORS (×8) — 3D Chevrons linking Ring1 → Ring2
+       
+       PAPER SPEC:
+         • 4 lenses at ring 1 nodes (FL, FR, RL, RR)
+         • Each lens has 2 rigid rods (8cm @ 120° separation)
+         • Rods connect downward to ring 2 nodes (offset 45°)
+         • Forms 4 "convex lens" structures between rings → morphing constraint
+ -->
+  <!-- FL Chevron: lens_FL to ring2 nodes m0, m3 -->
+  <link name="chevron_FL_rod1">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.0015"/>
+      <inertia ixx="0.0000006" ixy="0" ixz="0"
+               iyy="0.000009" iyz="0"
+               izz="0.000009"/>
+    </inertial>
+  </link>
+  <joint name="chevron_FL_rod1_joint" type="fixed">
+    <parent link="lens_FL"/>
+    <child link="chevron_FL_rod1"/>
+    <!-- connects to m0 (0.4502, 0.4502, 0.10): midpoint at (-0.0932, 0.2251, 0.025) rel to lens -->
+    <origin xyz="-0.0932 0.2251 0.025" rpy="0.204 0 -1.190"/>
+  </joint>
+
+  <link name="chevron_FL_rod2">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.0015"/>
+      <inertia ixx="0.0000006" ixy="0" ixz="0"
+               iyy="0.000009" iyz="0"
+               izz="0.000009"/>
+    </inertial>
+  </link>
+  <joint name="chevron_FL_rod2_joint" type="fixed">
+    <parent link="lens_FL"/>
+    <child link="chevron_FL_rod2"/>
+    <!-- connects to m3 (0.4502, -0.4502, 0.10): midpoint at (-0.0932, -0.2251, 0.025) -->
+    <origin xyz="-0.0932 -0.2251 0.025" rpy="-0.204 0 -1.190"/>
+  </joint>
+
+  <!-- FR Chevron: lens_FR to ring2 nodes m0, m1 -->
+  <link name="chevron_FR_rod1">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.0015"/>
+      <inertia ixx="0.0000006" ixy="0" ixz="0"
+               iyy="0.000009" iyz="0"
+               izz="0.000009"/>
+    </inertial>
+  </link>
+  <joint name="chevron_FR_rod1_joint" type="fixed">
+    <parent link="lens_FR"/>
+    <child link="chevron_FR_rod1"/>
+    <!-- connects to m0 (0.4502, 0.4502, 0.10): midpoint at (0.2251, -0.0932, 0.025) -->
+    <origin xyz="0.2251 -0.0932 0.025" rpy="0.204 0 0.380"/>
+  </joint>
+
+  <link name="chevron_FR_rod2">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.0015"/>
+      <inertia ixx="0.0000006" ixy="0" ixz="0"
+               iyy="0.000009" iyz="0"
+               izz="0.000009"/>
+    </inertial>
+  </link>
+  <joint name="chevron_FR_rod2_joint" type="fixed">
+    <parent link="lens_FR"/>
+    <child link="chevron_FR_rod2"/>
+    <!-- connects to m1 (-0.4502, 0.4502, 0.10): midpoint at (-0.2251, -0.0932, 0.025) -->
+    <origin xyz="-0.2251 -0.0932 0.025" rpy="0.204 0 2.761"/>
+  </joint>
+
+  <!-- RL Chevron: lens_RL to ring2 nodes m1, m2 -->
+  <link name="chevron_RL_rod1">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.0015"/>
+      <inertia ixx="0.0000006" ixy="0" ixz="0"
+               iyy="0.000009" iyz="0"
+               izz="0.000009"/>
+    </inertial>
+  </link>
+  <joint name="chevron_RL_rod1_joint" type="fixed">
+    <parent link="lens_RL"/>
+    <child link="chevron_RL_rod1"/>
+    <!-- connects to m1 (-0.4502, 0.4502, 0.10): midpoint at (0.0932, 0.2251, 0.025) -->
+    <origin xyz="0.0932 0.2251 0.025" rpy="0.204 0 1.951"/>
+  </joint>
+
+  <link name="chevron_RL_rod2">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.0015"/>
+      <inertia ixx="0.0000006" ixy="0" ixz="0"
+               iyy="0.000009" iyz="0"
+               izz="0.000009"/>
+    </inertial>
+  </link>
+  <joint name="chevron_RL_rod2_joint" type="fixed">
+    <parent link="lens_RL"/>
+    <child link="chevron_RL_rod2"/>
+    <!-- connects to m2 (-0.4502, -0.4502, 0.10): midpoint at (0.0932, -0.2251, 0.025) -->
+    <origin xyz="0.0932 -0.2251 0.025" rpy="-0.204 0 1.951"/>
+  </joint>
+
+  <!-- RR Chevron: lens_RR to ring2 nodes m2, m3 -->
+  <link name="chevron_RR_rod1">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.0015"/>
+      <inertia ixx="0.0000006" ixy="0" ixz="0"
+               iyy="0.000009" iyz="0"
+               izz="0.000009"/>
+    </inertial>
+  </link>
+  <joint name="chevron_RR_rod1_joint" type="fixed">
+    <parent link="lens_RR"/>
+    <child link="chevron_RR_rod1"/>
+    <!-- connects to m2 (-0.4502, -0.4502, 0.10): midpoint at (-0.2251, 0.0932, 0.025) -->
+    <origin xyz="-0.2251 0.0932 0.025" rpy="0.204 0 -0.380"/>
+  </joint>
+
+  <link name="chevron_RR_rod2">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.004" length="0.49"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <mass value="0.0015"/>
+      <inertia ixx="0.0000006" ixy="0" ixz="0"
+               iyy="0.000009" iyz="0"
+               izz="0.000009"/>
+    </inertial>
+  </link>
+  <joint name="chevron_RR_rod2_joint" type="fixed">
+    <parent link="lens_RR"/>
+    <child link="chevron_RR_rod2"/>
+    <!-- connects to m3 (0.4502, -0.4502, 0.10): midpoint at (0.2251, 0.0932, 0.025) -->
+    <origin xyz="0.2251 0.0932 0.025" rpy="0.204 0 1.190"/>
+  </joint>
+
+  <!-- 
+       RIGIDITY CONNECTORS (×6) — NO CYCLES
+       
+       Connect adjacent arc segments via fixed joints.
+       CHAIN structure (tree, no cycles):
+         Ring 1: payload→arc1_1→conn_01→arc1_2→conn_12→arc1_3→conn_23→arc1_4
+         Ring 2: payload→arc2_1→conn_01→arc2_2→conn_12→arc2_3→conn_23→arc2_4
+       
+       NOTE: NO closure connectors (conn_30) to avoid cycles.
+       Python will maintain the ring closure via virtual spring forces.
+ -->
+
+  <!-- Ring 1 Connectors -->
+  
+  <link name="connector_1_01">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0005"/>
+      <inertia ixx="0.0000005" ixy="0" ixz="0"
+               iyy="0.0000005" iyz="0"
+               izz="0.0000005"/>
+    </inertial>
+  </link>
+  <!-- Arc1_1 → Connector_1_01 (arc1_1 frame origin at its center) -->
+  <joint name="j_arc1_1_to_conn_1_01" type="fixed">
+    <parent link="arc1_1"/>
+    <child  link="connector_1_01"/>
+    <origin xyz="0.4512 0 0" rpy="0 0 0"/>
+  </joint>
+  <!-- Connector_1_01 → Arc1_2 -->
+  <joint name="j_conn_1_01_to_arc1_2" type="fixed">
+    <parent link="connector_1_01"/>
+    <child  link="arc1_2"/>
+    <origin xyz="-0.4512 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="connector_1_12">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0005"/>
+      <inertia ixx="0.0000005" ixy="0" ixz="0"
+               iyy="0.0000005" iyz="0"
+               izz="0.0000005"/>
+    </inertial>
+  </link>
+  <joint name="j_arc1_2_to_conn_1_12" type="fixed">
+    <parent link="arc1_2"/>
+    <child  link="connector_1_12"/>
+    <origin xyz="0 0.4512 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="j_conn_1_12_to_arc1_3" type="fixed">
+    <parent link="connector_1_12"/>
+    <child  link="arc1_3"/>
+    <origin xyz="0 -0.4512 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="connector_1_23">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0005"/>
+      <inertia ixx="0.0000005" ixy="0" ixz="0"
+               iyy="0.0000005" iyz="0"
+               izz="0.0000005"/>
+    </inertial>
+  </link>
+  <joint name="j_arc1_3_to_conn_1_23" type="fixed">
+    <parent link="arc1_3"/>
+    <child  link="connector_1_23"/>
+    <origin xyz="-0.4512 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="j_conn_1_23_to_arc1_4" type="fixed">
+    <parent link="connector_1_23"/>
+    <child  link="arc1_4"/>
+    <origin xyz="0.4512 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Ring 2 Connectors (same structure, offset at Z=0.10) -->
+  
+  <link name="connector_2_01">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0005"/>
+      <inertia ixx="0.0000005" ixy="0" ixz="0"
+               iyy="0.0000005" iyz="0"
+               izz="0.0000005"/>
+    </inertial>
+  </link>
+  <joint name="j_arc2_1_to_conn_2_01" type="fixed">
+    <parent link="arc2_1"/>
+    <child  link="connector_2_01"/>
+    <origin xyz="0.3186 -0.3186 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="j_conn_2_01_to_arc2_2" type="fixed">
+    <parent link="connector_2_01"/>
+    <child  link="arc2_2"/>
+    <origin xyz="-0.3186 0.3186 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="connector_2_12">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0005"/>
+      <inertia ixx="0.0000005" ixy="0" ixz="0"
+               iyy="0.0000005" iyz="0"
+               izz="0.0000005"/>
+    </inertial>
+  </link>
+  <joint name="j_arc2_2_to_conn_2_12" type="fixed">
+    <parent link="arc2_2"/>
+    <child  link="connector_2_12"/>
+    <origin xyz="-0.3186 -0.3186 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="j_conn_2_12_to_arc2_3" type="fixed">
+    <parent link="connector_2_12"/>
+    <child  link="arc2_3"/>
+    <origin xyz="0.3186 0.3186 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="connector_2_23">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><sphere radius="0.005"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0005"/>
+      <inertia ixx="0.0000005" ixy="0" ixz="0"
+               iyy="0.0000005" iyz="0"
+               izz="0.0000005"/>
+    </inertial>
+  </link>
+  <joint name="j_arc2_3_to_conn_2_23" type="fixed">
+    <parent link="arc2_3"/>
+    <child  link="connector_2_23"/>
+    <origin xyz="-0.3186 0.3186 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="j_conn_2_23_to_arc2_4" type="fixed">
+    <parent link="connector_2_23"/>
+    <child  link="arc2_4"/>
+    <origin xyz="0.3186 -0.3186 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 
+       WHEELS (×4) — Continuous joints — Paper: 4 rimless wheels, 10 spokes each
+       
+       SPECIFICATION (from paper):
+         • 4 rimless wheels total (no rim) + hub geometry
+         • Spoke length (effective radius): 0.25 m
+         • Spokes per wheel: 10 (360°/10 = 36° apart)
+         • Spoke diameter: 8 mm fiberglass
+         • Hub: 3D-printed connector
+         • Mass per wheel: 0.05 kg
+       
+       GEOMETRY (position & rotation):
+         FL (front-left):  lens origin at (+0.6366,  0.0000, +0.05) → Y-axis spin
+         FR (front-right): lens origin at ( 0.0000, +0.6366, +0.05) → X-axis spin
+         RL (rear-left):   lens origin at (-0.6366,  0.0000, +0.05) → Y-axis spin
+         RR (rear-right):  lens origin at ( 0.0000, -0.6366, +0.05) → X-axis spin
+
+ -->
+
+  <link name="wheel_FL">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.2500" length="0.02"/></geometry>
+      <material name="wheel_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.2500" length="0.02"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <mass value="0.050"/>
+      <inertia ixx="0.000800" ixy="0" ixz="0"
+               iyy="0.001550" iyz="0"
+               izz="0.000800"/>
+    </inertial>
+  </link>
+  <joint name="wheel_FL_joint" type="continuous">
+    <parent link="lens_FL"/>
+    <child  link="wheel_FL"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.3" friction="0.05"/>
+  </joint>
+
+  <link name="wheel_FR">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.2500" length="0.02"/></geometry>
+      <material name="wheel_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.2500" length="0.02"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <mass value="0.050"/>
+      <inertia ixx="0.001550" ixy="0" ixz="0"
+               iyy="0.000800" iyz="0"
+               izz="0.000800"/>
+    </inertial>
+  </link>
+  <joint name="wheel_FR_joint" type="continuous">
+    <parent link="lens_FR"/>
+    <child  link="wheel_FR"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.3" friction="0.05"/>
+  </joint>
+
+  <link name="wheel_RL">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.2500" length="0.02"/></geometry>
+      <material name="wheel_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.2500" length="0.02"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <mass value="0.050"/>
+      <inertia ixx="0.000800" ixy="0" ixz="0"
+               iyy="0.001550" iyz="0"
+               izz="0.000800"/>
+    </inertial>
+  </link>
+  <joint name="wheel_RL_joint" type="continuous">
+    <parent link="lens_RL"/>
+    <child  link="wheel_RL"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.3" friction="0.05"/>
+  </joint>
+
+  <link name="wheel_RR">
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.2500" length="0.02"/></geometry>
+      <material name="wheel_dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.2500" length="0.02"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <mass value="0.050"/>
+      <inertia ixx="0.001550" ixy="0" ixz="0"
+               iyy="0.000800" iyz="0"
+               izz="0.000800"/>
+    </inertial>
+  </link>
+  <joint name="wheel_RR_joint" type="continuous">
+    <parent link="lens_RR"/>
+    <child  link="wheel_RR"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.3" friction="0.05"/>
+  </joint>
+
+  <!-- ══════════════════════════════════════════
+       VIRTUAL TENDON JOINTS (×2)
+       Tendon 1: along X (forward), winch 40 kg·cm = 3.92 N·m
+       Tendon 2: along Y (left),    winch 40 kg·cm = 3.92 N·m
+       Range [0.05, 0.50] m
+  ══════════════════════════════════════════ -->
+
+  <link name="eyelet_1">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.001"/>
+      <inertia ixx="0.000001" ixy="0" ixz="0"
+               iyy="0.000001" iyz="0"
+               izz="0.000001"/>
+    </inertial>
+  </link>
+  <joint name="tendon_1" type="prismatic">
+    <parent link="payload"/>
+    <child  link="eyelet_1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="0.05" upper="0.50" effort="3.92" velocity="0.05"/>
+    <dynamics damping="10.0" friction="0.5"/>
+  </joint>
+
+  <link name="eyelet_2">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.001"/>
+      <inertia ixx="0.000001" ixy="0" ixz="0"
+               iyy="0.000001" iyz="0"
+               izz="0.000001"/>
+    </inertial>
+  </link>
+  <joint name="tendon_2" type="prismatic">
+    <parent link="payload"/>
+    <child  link="eyelet_2"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="0.05" upper="0.50" effort="3.92" velocity="0.05"/>
+    <dynamics damping="10.0" friction="0.5"/>
+  </joint>
+
+</robot>
