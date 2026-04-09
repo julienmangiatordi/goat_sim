@@ -1,0 +1,704 @@
+<?xml version="1.0"?>
+<!--
+GOAT Robot — Configuration ROVER (aspect ratio r=2.2)
+Polzin et al., Sci. Robot. 10, eadp6419 (2025)
+
+VERSION 4:
+  - Payload plus compact (m = 1.8 kg inchangé).
+  - Connecteurs: joints revolute verrouillés (limit=[0,0]) pour éviter le collapse Genesis.
+  - Pivots + segments FG: motif de lentilles qui approxime le double anneau mécanique.
+  - Tendon1 & Tendon2: liens purement visuels (rouge/vert) le long des axes X et Y.
+  - Roues: modèle rimless (hub + 8 rayons) + deux segments de “double anneau” par roue
+    (un au-dessus, un en dessous de la roue), purement visuels.
+  - Masses globales alignées sur le paper (payload 1.8, 4×connecteur 0.12, 4×pivot 0.02,
+    4×roue 0.11, segments FG quelques grammes). [Table 1 du paper]
+-->
+
+<robot name="goat_rover">
+
+  <!-- ══════════════════════════════════════
+       PAYLOAD — disque central 1.80 kg
+  ══════════════════════════════════════ -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.8"/>
+      <!-- cylindre r=0.08m h=0.04m -->
+      <inertia ixx="0.003120" ixy="0" ixz="0"
+               iyy="0.003120" iyz="0"
+               izz="0.005760"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.08" length="0.04"/></geometry>
+      <material name="payload_gray"><color rgba="0.80 0.80 0.85 1.0"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.08" length="0.04"/></geometry>
+    </collision>
+  </link>
+
+  <!-- ══════════════════════════════════════
+       TENDONS VISUELS (ne changent pas la dynamique)
+       Tendon 1 ~ axe X (rouge), Tendon 2 ~ axe Y (vert)
+  ══════════════════════════════════════ -->
+
+  <link name="tendon1_vis">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0001"/>
+      <inertia ixx="0" ixy="0" ixz="0"
+               iyy="0" iyz="0"
+               izz="0"/>
+    </inertial>
+    <visual>
+      <!-- de -POS_X à +POS_X, légèrement sous le payload -->
+      <origin xyz="0 0 -0.03" rpy="0 0 0"/>
+      <geometry><box size="1.2732 0.004 0.004"/></geometry>
+      <material name="tendon_red"><color rgba="0.9 0.1 0.1 1.0"/></material>
+    </visual>
+  </link>
+  <joint name="joint_tendon1_vis" type="fixed">
+    <parent link="base_link"/>
+    <child link="tendon1_vis"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="tendon2_vis">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0001"/>
+      <inertia ixx="0" ixy="0" ixz="0"
+               iyy="0" iyz="0"
+               izz="0"/>
+    </inertial>
+    <visual>
+      <!-- de -POS_Y à +POS_Y, légèrement sous le payload -->
+      <origin xyz="0 0 -0.03" rpy="0 0 1.5708"/>
+      <geometry><box size="0.5787 0.004 0.004"/></geometry>
+      <material name="tendon_green"><color rgba="0.1 0.9 0.1 1.0"/></material>
+    </visual>
+  </link>
+  <joint name="joint_tendon2_vis" type="fixed">
+    <parent link="base_link"/>
+    <child link="tendon2_vis"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ══════════════════════════════════════
+       CONNECTEURS CHEVRON ×4 — revolute verrouillé
+       (rigide en rotation via gros kp en Python)
+  ══════════════════════════════════════ -->
+
+  <link name="connector_X_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.12"/>
+      <inertia ixx="0.000019" ixy="0" ixz="0"
+               iyy="0.000205" iyz="0"
+               izz="0.000205"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+      <material name="gray"><color rgba="0.35 0.35 0.35 1.0"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_X_pos" type="revolute">
+    <parent link="base_link"/>
+    <child link="connector_X_pos"/>
+    <origin xyz="0.6366 0.0 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.3" upper="0.3" effort="5.0" velocity="2.0"/>
+    <dynamics damping="1000.0" friction="0.0"/>
+  </joint>
+
+  <link name="connector_X_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.12"/>
+      <inertia ixx="0.000019" ixy="0" ixz="0"
+               iyy="0.000205" iyz="0"
+               izz="0.000205"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_X_neg" type="revolute">
+    <parent link="base_link"/>
+    <child link="connector_X_neg"/>
+    <origin xyz="-0.6366 0.0 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.3" upper="0.3" effort="5.0" velocity="2.0"/>
+    <dynamics damping="1000.0" friction="0.0"/>
+  </joint>
+
+  <link name="connector_Y_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.12"/>
+      <inertia ixx="0.000205" ixy="0" ixz="0"
+               iyy="0.000019" iyz="0"
+               izz="0.000205"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_Y_pos" type="revolute">
+    <parent link="base_link"/>
+    <child link="connector_Y_pos"/>
+    <origin xyz="0.0 0.2894 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.3" upper="0.3" effort="5.0" velocity="2.0"/>
+    <dynamics damping="1000.0" friction="0.0"/>
+  </joint>
+
+  <link name="connector_Y_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.12"/>
+      <inertia ixx="0.000205" ixy="0" ixz="0"
+               iyy="0.000019" iyz="0"
+               izz="0.000205"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_Y_neg" type="revolute">
+    <parent link="base_link"/>
+    <child link="connector_Y_neg"/>
+    <origin xyz="0.0 -0.2894 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.3" upper="0.3" effort="5.0" velocity="2.0"/>
+    <dynamics damping="1000.0" friction="0.0"/>
+  </joint>
+
+  <!-- ══════════════════════════════════════
+       PIVOTS ×4 — joints revolute Z
+       (compliance principale de la frame)
+  ══════════════════════════════════════ -->
+
+  <link name="pivot_XpYp">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.02"/>
+      <inertia ixx="1.6e-6" ixy="0" ixz="0"
+               iyy="1.6e-6" iyz="0"
+               izz="1.6e-6"/>
+    </inertial>
+    <visual>
+      <geometry><sphere radius="0.022"/></geometry>
+      <material name="orange"><color rgba="0.95 0.50 0.05 1.0"/></material>
+    </visual>
+    <collision>
+      <geometry><sphere radius="0.022"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_pivot_XpYp" type="revolute">
+    <parent link="base_link"/>
+    <child link="pivot_XpYp"/>
+    <origin xyz="0.4502 0.2046 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.8" upper="0.8" effort="12.0" velocity="3.0"/>
+    <dynamics damping="0.8" friction="0.02"/>
+  </joint>
+
+  <link name="pivot_XpYn">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.02"/>
+      <inertia ixx="1.6e-6" ixy="0" ixz="0"
+               iyy="1.6e-6" iyz="0"
+               izz="1.6e-6"/>
+    </inertial>
+    <visual>
+      <geometry><sphere radius="0.022"/></geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="0.022"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_pivot_XpYn" type="revolute">
+    <parent link="base_link"/>
+    <child link="pivot_XpYn"/>
+    <origin xyz="0.4502 -0.2046 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.8" upper="0.8" effort="12.0" velocity="3.0"/>
+    <dynamics damping="0.8" friction="0.02"/>
+  </joint>
+
+  <link name="pivot_XnYp">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.02"/>
+      <inertia ixx="1.6e-6" ixy="0" ixz="0"
+               iyy="1.6e-6" iyz="0"
+               izz="1.6e-6"/>
+    </inertial>
+    <visual>
+      <geometry><sphere radius="0.022"/></geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="0.022"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_pivot_XnYp" type="revolute">
+    <parent link="base_link"/>
+    <child link="pivot_XnYp"/>
+    <origin xyz="-0.4502 0.2046 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.8" upper="0.8" effort="12.0" velocity="3.0"/>
+    <dynamics damping="0.8" friction="0.02"/>
+  </joint>
+
+  <link name="pivot_XnYn">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.02"/>
+      <inertia ixx="1.6e-6" ixy="0" ixz="0"
+               iyy="1.6e-6" iyz="0"
+               izz="1.6e-6"/>
+    </inertial>
+    <visual>
+      <geometry><sphere radius="0.022"/></geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="0.022"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_pivot_XnYn" type="revolute">
+    <parent link="base_link"/>
+    <child link="pivot_XnYn"/>
+    <origin xyz="-0.4502 -0.2046 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.8" upper="0.8" effort="12.0" velocity="3.0"/>
+    <dynamics damping="0.8" friction="0.02"/>
+  </joint>
+
+  <!-- ══════════════════════════════════════
+       SEGMENTS FG (anneau principal) ×8
+       → motif de lentilles dans le plan XY
+  ══════════════════════════════════════ -->
+
+  <!-- pXpYp → cXp -->
+  <link name="seg_XpYp_Xpos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000393"/>
+      <inertia ixx="1.2e-9" ixy="0" ixz="0"
+               iyy="2.24e-6" iyz="0"
+               izz="2.24e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0932 -0.1023 0.0" rpy="0 0 -0.8328"/>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+      <material name="fg_rod"><color rgba="0.87 0.82 0.68 1.0"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0.0932 -0.1023 0.0" rpy="0 0 -0.8328"/>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+    </collision>
+      
+  </link>
+  <joint name="joint_seg_XpYp_Xpos" type="fixed">
+    <parent link="pivot_XpYp"/>
+    <child link="seg_XpYp_Xpos"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- pXpYp → cYp -->
+  <link name="seg_XpYp_Ypos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000650"/>
+      <inertia ixx="2.0e-9" ixy="0" ixz="0"
+               iyy="6.10e-6" iyz="0"
+               izz="6.10e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.2251 0.0424 0.0" rpy="0 0 2.9544"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry>
+      <material name="fg_rod"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.2251 0.0424 0.0" rpy="0 0 2.9544"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_seg_XpYp_Ypos" type="fixed">
+    <parent link="pivot_XpYp"/>
+    <child link="seg_XpYp_Ypos"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- pXpYn → cXp -->
+  <link name="seg_XpYn_Xpos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000393"/>
+      <inertia ixx="1.2e-9" ixy="0" ixz="0"
+               iyy="2.24e-6" iyz="0"
+               izz="2.24e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0932 0.1023 0.0" rpy="0 0 0.8328"/>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+      <material name="fg_rod"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+      <material name="fg_rod"/>
+    </collision>
+  </link>
+  <joint name="joint_seg_XpYn_Xpos" type="fixed">
+    <parent link="pivot_XpYn"/>
+    <child link="seg_XpYn_Xpos"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- pXpYn → cYn -->
+  <link name="seg_XpYn_Yneg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000650"/>
+      <inertia ixx="2.0e-9" ixy="0" ixz="0"
+               iyy="6.10e-6" iyz="0"
+               izz="6.10e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.2251 -0.0424 0.0" rpy="0 0 -2.9544"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry>
+      <material name="fg_rod"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.2251 -0.0424 0.0" rpy="0 0 -2.9544"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry> 
+    </collision>
+  </link>
+  <joint name="joint_seg_XpYn_Yneg" type="fixed">
+    <parent link="pivot_XpYn"/>
+    <child link="seg_XpYn_Yneg"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- pXnYp → cXn -->
+  <link name="seg_XnYp_Xneg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000393"/>
+      <inertia ixx="1.2e-9" ixy="0" ixz="0"
+               iyy="2.24e-6" iyz="0"
+               izz="2.24e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0932 -0.1023 0.0" rpy="0 0 -2.3088"/>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+      <material name="fg_rod"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0932 -0.1023 0.0" rpy="0 0 -2.3088"/>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_seg_XnYp_Xneg" type="fixed">
+    <parent link="pivot_XnYp"/>
+    <child link="seg_XnYp_Xneg"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- pXnYp → cYp -->
+  <link name="seg_XnYp_Ypos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000650"/>
+      <inertia ixx="2.0e-9" ixy="0" ixz="0"
+               iyy="6.10e-6" iyz="0"
+               izz="6.10e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.2251 0.0424 0.0" rpy="0 0 0.1868"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry>
+      <material name="fg_rod"/>
+    </visual>
+    <collision>
+      <origin xyz="0.2251 0.0424 0.0" rpy="0 0 0.1868"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_seg_XnYp_Ypos" type="fixed">
+    <parent link="pivot_XnYp"/>
+    <child link="seg_XnYp_Ypos"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- pXnYn → cXn -->
+  <link name="seg_XnYn_Xneg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000393"/>
+      <inertia ixx="1.2e-9" ixy="0" ixz="0"
+               iyy="2.24e-6" iyz="0"
+               izz="2.24e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0932 0.1023 0.0" rpy="0 0 2.3088"/>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+      <material name="fg_rod"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0932 0.1023 0.0" rpy="0 0 2.3088"/>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_seg_XnYn_Xneg" type="fixed">
+    <parent link="pivot_XnYn"/>
+    <child link="seg_XnYn_Xneg"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- pXnYn → cYn -->
+  <link name="seg_XnYn_Yneg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000650"/>
+      <inertia ixx="2.0e-9" ixy="0" ixz="0"
+               iyy="6.10e-6" iyz="0"
+               izz="6.10e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.2251 -0.0424 0.0" rpy="0 0 -0.1868"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry>
+      <material name="fg_rod"/>
+    </visual>
+    <collision>
+      <origin xyz="0.2251 -0.0424 0.0" rpy="0 0 -0.1868"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_seg_XnYn_Yneg" type="fixed">
+    <parent link="pivot_XnYn"/>
+    <child link="seg_XnYn_Yneg"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ══════════════════════════════════════
+       ROUES RIMLESS ×4
+       hub + 8 rayons + 2 segments de “double anneau” visuels
+  ══════════════════════════════════════ -->
+
+  <!-- Roue droite (X+) -->
+  <link name="wheel_X_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.001734" ixy="0" ixz="0"
+               iyy="0.003438" iyz="0"
+               izz="0.001734"/>
+    </inertial>
+
+    <!-- Hub autour de l'axe Y -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.05" length="0.06"/></geometry>
+      <material name="hub_gray"><color rgba="0.4 0.4 0.4 1.0"/></material>
+    </visual>
+
+    <!-- 8 rayons dans le plan de la roue -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><box size="0.25 0.01 0.01"/></geometry>
+      <material name="spoke_fg"><color rgba="0.9 0.9 0.9 1.0"/></material>
+    </visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0.7854"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 1.5708"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 2.3562"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 3.1416"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 3.9270"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 4.7124"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 5.4978"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+
+    <!-- Double anneau visuel: deux segments alignés avec la frame -->
+    <visual>
+      <origin xyz="0 0 0.07" rpy="0 0 0"/>
+      <geometry><box size="0.30 0.008 0.008"/></geometry>
+      <material name="fg_rod"/>
+    </visual>
+    <visual>
+      <origin xyz="0 0 -0.07" rpy="0 0 0"/>
+      <geometry><box size="0.30 0.008 0.008"/></geometry>
+      <material name="fg_rod"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_X_pos" type="continuous">
+    <parent link="connector_X_pos"/>
+    <child link="wheel_X_pos"/>
+    <origin xyz="0.0 0.05 0.0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+  <!-- Roue gauche (X−) -->
+  <link name="wheel_X_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.001734" ixy="0" ixz="0"
+               iyy="0.003438" iyz="0"
+               izz="0.001734"/>
+    </inertial>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.05" length="0.06"/></geometry>
+      <material name="hub_gray"/>
+    </visual>
+
+    <!-- 8 rayons -->
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0.7854"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 1.5708"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 2.3562"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 3.1416"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 3.9270"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 4.7124"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 5.4978"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+
+    <!-- Double anneau visuel -->
+    <visual><origin xyz="0 0 0.07" rpy="0 0 0"/><geometry><box size="0.30 0.008 0.008"/></geometry><material name="fg_rod"/></visual>
+    <visual><origin xyz="0 0 -0.07" rpy="0 0 0"/><geometry><box size="0.30 0.008 0.008"/></geometry><material name="fg_rod"/></visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_X_neg" type="continuous">
+    <parent link="connector_X_neg"/>
+    <child link="wheel_X_neg"/>
+    <origin xyz="0.0 -0.05 0.0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+  <!-- Roue avant (Y+) -->
+  <link name="wheel_Y_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.003438" ixy="0" ixz="0"
+               iyy="0.001734" iyz="0"
+               izz="0.001734"/>
+    </inertial>
+
+    <!-- Hub autour de l'axe X -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 1.5708"/>
+      <geometry><cylinder radius="0.05" length="0.06"/></geometry>
+      <material name="hub_gray"/>
+    </visual>
+
+    <!-- 8 rayons -->
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0.7854"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 1.5708"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 2.3562"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 3.1416"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 3.9270"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 4.7124"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 5.4978"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+
+    <!-- Double anneau visuel -->
+    <visual><origin xyz="0 0 0.07" rpy="0 0 1.5708"/><geometry><box size="0.30 0.008 0.008"/></geometry><material name="fg_rod"/></visual>
+    <visual><origin xyz="0 0 -0.07" rpy="0 0 1.5708"/><geometry><box size="0.30 0.008 0.008"/></geometry><material name="fg_rod"/></visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_Y_pos" type="continuous">
+    <parent link="connector_Y_pos"/>
+    <child link="wheel_Y_pos"/>
+    <origin xyz="0.0 0.05 0.0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+  <!-- Roue arrière (Y−) -->
+  <link name="wheel_Y_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.003438" ixy="0" ixz="0"
+               iyy="0.001734" iyz="0"
+               izz="0.001734"/>
+    </inertial>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 1.5708"/>
+      <geometry><cylinder radius="0.05" length="0.06"/></geometry>
+      <material name="hub_gray"/>
+    </visual>
+
+    <!-- 8 rayons -->
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0.7854"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 1.5708"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 2.3562"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 3.1416"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 3.9270"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 4.7124"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 5.4978"/><geometry><box size="0.25 0.01 0.01"/></geometry><material name="spoke_fg"/></visual>
+
+    <!-- Double anneau visuel -->
+    <visual><origin xyz="0 0 0.07" rpy="0 0 1.5708"/><geometry><box size="0.30 0.008 0.008"/></geometry><material name="fg_rod"/></visual>
+    <visual><origin xyz="0 0 -0.07" rpy="0 0 1.5708"/><geometry><box size="0.30 0.008 0.008"/></geometry><material name="fg_rod"/></visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_Y_neg" type="continuous">
+    <parent link="connector_Y_neg"/>
+    <child link="wheel_Y_neg"/>
+    <origin xyz="0.0 -0.05 0.0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+</robot>

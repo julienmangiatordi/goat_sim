@@ -1,0 +1,582 @@
+<?xml version="1.0"?>
+<!--
+GOAT Robot — Configuration ROVER (aspect ratio r=2.2)
+Polzin et al., Sci. Robot. 10, eadp6419 (2025)
+
+VERSION 3 — corrections physiques:
+  - Connecteurs: revolute verrouillé (kp=1e6 Python) → accessibles via get_link()
+  - Segments FG: box size="L 0.008 0.008" + rpy="0 0 angle" CORRECT dans plan XY
+    Masses/inerties issues des formules cylindre FG ø5mm, ρ=2000 kg/m³
+  - Roues Y: offset corrigé en Y (était X), axe X correct
+  - Payload: cylindre aplati fidèle au paper
+  - Raideur pivots: kp=3 N·m/rad en Python (EI/L fibre de verre 5mm)
+  - PD motors: kp=300, kv=30, force_range=±4.41 N·m (paper: 45 kg·cm)
+
+Masses (paper Table 1, total 2.80 kg):
+  payload       1.800 kg
+  4× connector  0.120 kg  (moteur WP + chevron FG)
+  4× pivot      0.020 kg  (jonction FG flexible)
+  4× roue       0.110 kg  (10 rayons FG 8mm + hub)
+  8× segment    0.004 kg  (tiges FG ø5mm anneau)
+  TOTAL         2.804 kg ≈ 2.80 kg ✓
+-->
+
+<robot name="goat_rover">
+
+  <!-- ══════════════════════════════════════
+       PAYLOAD — cylindre central 1.80 kg
+  ══════════════════════════════════════ -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.8"/>
+      <!-- cylindre r=0.10m h=0.08m
+           Ixx=Iyy = m/4*r² + m/12*h² = 0.0045+0.00096 = 0.00546
+           Izz = m/2*r² = 0.009 -->
+      <inertia ixx="0.005460" ixy="0" ixz="0"
+               iyy="0.005460" iyz="0"
+               izz="0.009000"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.10" length="0.08"/></geometry>
+      <material name="silver"><color rgba="0.75 0.75 0.80 1.0"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.10" length="0.08"/></geometry>
+    </collision>
+  </link>
+
+  <!-- ══════════════════════════════════════
+       CONNECTEURS ×4 — revolute verrouillé
+       Joint type=revolute limit=[0,0]
+       → Genesis garde le lien dans l'arbre
+       → rendu rigide en Python: kp=1e6 N·m/rad
+  ══════════════════════════════════════ -->
+
+  <link name="connector_X_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.12"/>
+      <!-- cylindre ø36mm L=140mm axe X
+           Ixx(spin)=m/2*r²=0.12/2*0.018²=1.944e-5
+           Iyy=Izz=m/4*r²+m/12*L²=8.748e-6+1.96e-4=2.047e-4 -->
+      <inertia ixx="0.000019" ixy="0" ixz="0"
+               iyy="0.000205" iyz="0"
+               izz="0.000205"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+      <material name="gray"><color rgba="0.35 0.35 0.35 1.0"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_X_pos" type="revolute">
+    <parent link="base_link"/>
+    <child link="connector_X_pos"/>
+    <origin xyz="0.6366 0.0 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0"/>
+    <dynamics damping="1000.0" friction="0.0"/>
+  </joint>
+
+  <link name="connector_X_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.12"/>
+      <inertia ixx="0.000019" ixy="0" ixz="0"
+               iyy="0.000205" iyz="0"
+               izz="0.000205"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_X_neg" type="revolute">
+    <parent link="base_link"/>
+    <child link="connector_X_neg"/>
+    <origin xyz="-0.6366 0.0 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0"/>
+    <dynamics damping="1000.0" friction="0.0"/>
+  </joint>
+
+  <link name="connector_Y_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.12"/>
+      <inertia ixx="0.000205" ixy="0" ixz="0"
+               iyy="0.000019" iyz="0"
+               izz="0.000205"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_Y_pos" type="revolute">
+    <parent link="base_link"/>
+    <child link="connector_Y_pos"/>
+    <origin xyz="0.0 0.2894 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0"/>
+    <dynamics damping="1000.0" friction="0.0"/>
+  </joint>
+
+  <link name="connector_Y_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.12"/>
+      <inertia ixx="0.000205" ixy="0" ixz="0"
+               iyy="0.000019" iyz="0"
+               izz="0.000205"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+      <material name="gray"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.018" length="0.14"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_Y_neg" type="revolute">
+    <parent link="base_link"/>
+    <child link="connector_Y_neg"/>
+    <origin xyz="0.0 -0.2894 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.0" upper="0.0" effort="0.0" velocity="0.0"/>
+    <dynamics damping="1000.0" friction="0.0"/>
+  </joint>
+
+  <!-- ══════════════════════════════════════
+       PIVOTS ×4 — revolute Z
+       kp=3 N·m/rad, kv=0.5 N·m·s/rad (Python)
+       EI/L = 45e9 * π*(0.0025)⁴/4 / 0.5 = 2.76 N·m/rad → arrondi 3
+  ══════════════════════════════════════ -->
+
+  <link name="pivot_XpYp">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.02"/>
+      <inertia ixx="1.6e-6" ixy="0" ixz="0"
+               iyy="1.6e-6" iyz="0"
+               izz="1.6e-6"/>
+    </inertial>
+    <visual>
+      <geometry><sphere radius="0.022"/></geometry>
+      <material name="orange"><color rgba="0.95 0.50 0.05 1.0"/></material>
+    </visual>
+    <collision>
+      <geometry><sphere radius="0.022"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_pivot_XpYp" type="revolute">
+    <parent link="base_link"/>
+    <child link="pivot_XpYp"/>
+    <origin xyz="0.4502 0.2046 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.8" upper="0.8" effort="12.0" velocity="3.0"/>
+    <dynamics damping="0.8" friction="0.02"/>
+  </joint>
+
+  <link name="pivot_XpYn">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.02"/>
+      <inertia ixx="1.6e-6" ixy="0" ixz="0"
+               iyy="1.6e-6" iyz="0"
+               izz="1.6e-6"/>
+    </inertial>
+    <visual>
+      <geometry><sphere radius="0.022"/></geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="0.022"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_pivot_XpYn" type="revolute">
+    <parent link="base_link"/>
+    <child link="pivot_XpYn"/>
+    <origin xyz="0.4502 -0.2046 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.8" upper="0.8" effort="12.0" velocity="3.0"/>
+    <dynamics damping="0.8" friction="0.02"/>
+  </joint>
+
+  <link name="pivot_XnYp">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.02"/>
+      <inertia ixx="1.6e-6" ixy="0" ixz="0"
+               iyy="1.6e-6" iyz="0"
+               izz="1.6e-6"/>
+    </inertial>
+    <visual>
+      <geometry><sphere radius="0.022"/></geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="0.022"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_pivot_XnYp" type="revolute">
+    <parent link="base_link"/>
+    <child link="pivot_XnYp"/>
+    <origin xyz="-0.4502 0.2046 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.8" upper="0.8" effort="12.0" velocity="3.0"/>
+    <dynamics damping="0.8" friction="0.02"/>
+  </joint>
+
+  <link name="pivot_XnYn">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.02"/>
+      <inertia ixx="1.6e-6" ixy="0" ixz="0"
+               iyy="1.6e-6" iyz="0"
+               izz="1.6e-6"/>
+    </inertial>
+    <visual>
+      <geometry><sphere radius="0.022"/></geometry>
+      <material name="orange"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="0.022"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_pivot_XnYn" type="revolute">
+    <parent link="base_link"/>
+    <child link="pivot_XnYn"/>
+    <origin xyz="-0.4502 -0.2046 0.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.8" upper="0.8" effort="12.0" velocity="3.0"/>
+    <dynamics damping="0.8" friction="0.02"/>
+  </joint>
+
+  <!-- ══════════════════════════════════════
+       SEGMENTS ANNEAU FG ×8 — joints fixed sur pivots
+       Géométrie: box size="L 0.008 0.008" dans plan XY
+       Orientation: rpy="0 0 angle" où angle=atan2(dy,dx) world
+       Position: origin=midpoint dans frame pivot (= vecteur/2 depuis pivot)
+       Masse: ρ_FG=2000 kg/m³, ø=5mm → m=ρ·π·r²·L
+       Inertie (barre mince axe X local):
+         Ixx = m·r²/2  (spin, négligeable)
+         Iyy = Izz = m·(r²/4 + L²/12)
+
+  pXpYp(0.4502,0.2046)→cXp(0.6366,0):   dx=0.1864 dy=-0.2046 L=0.2769 ang=-47.7°
+  pXpYp(0.4502,0.2046)→cYp(0,0.2894):   dx=-0.4502 dy=0.0848  L=0.4581 ang=169.3°
+  pXpYn(0.4502,-0.2046)→cXp(0.6366,0):  dx=0.1864 dy=0.2046  L=0.2769 ang=+47.7°
+  pXpYn(0.4502,-0.2046)→cYn(0,-0.2894): dx=-0.4502 dy=-0.0848 L=0.4581 ang=-169.3°
+  pXnYp(-0.4502,0.2046)→cXn(-0.6366,0): dx=-0.1864 dy=-0.2046 L=0.2769 ang=-132.3°
+  pXnYp(-0.4502,0.2046)→cYp(0,0.2894):  dx=0.4502 dy=0.0848  L=0.4581 ang=+10.7°
+  pXnYn(-0.4502,-0.2046)→cXn(-0.6366,0):dx=-0.1864 dy=0.2046  L=0.2769 ang=+132.3°
+  pXnYn(-0.4502,-0.2046)→cYn(0,-0.2894):dx=0.4502 dy=-0.0848  L=0.4581 ang=-10.7°
+  ══════════════════════════════════════ -->
+
+  <!-- seg 1: pXpYp → cXp  L=0.2769m ang=-47.7°=-0.8328rad -->
+  <link name="seg_XpYp_Xpos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000393"/>
+      <!-- Ixx(spin)=m*r²/2=1.2e-9, Iyy=Izz=m*(r²/4+L²/12)=2.24e-6 -->
+      <inertia ixx="1.2e-9" ixy="0" ixz="0"
+               iyy="2.24e-6" iyz="0"
+               izz="2.24e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0932 -0.1023 0.0" rpy="0 0 -0.8328"/>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+      <material name="beige"><color rgba="0.87 0.82 0.68 1.0"/></material>
+    </visual>
+  </link>
+  <joint name="joint_seg_XpYp_Xpos" type="fixed">
+    <parent link="pivot_XpYp"/>
+    <child link="seg_XpYp_Xpos"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- seg 2: pXpYp → cYp  L=0.4581m ang=169.3°=2.9544rad -->
+  <link name="seg_XpYp_Ypos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000650"/>
+      <inertia ixx="2.0e-9" ixy="0" ixz="0"
+               iyy="6.10e-6" iyz="0"
+               izz="6.10e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.2251 0.0424 0.0" rpy="0 0 2.9544"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry>
+      <material name="beige"/>
+    </visual>
+  </link>
+  <joint name="joint_seg_XpYp_Ypos" type="fixed">
+    <parent link="pivot_XpYp"/>
+    <child link="seg_XpYp_Ypos"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- seg 3: pXpYn → cXp  L=0.2769m ang=+47.7°=+0.8328rad -->
+  <link name="seg_XpYn_Xpos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000393"/>
+      <inertia ixx="1.2e-9" ixy="0" ixz="0"
+               iyy="2.24e-6" iyz="0"
+               izz="2.24e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.0932 0.1023 0.0" rpy="0 0 0.8328"/>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+      <material name="beige"/>
+    </visual>
+  </link>
+  <joint name="joint_seg_XpYn_Xpos" type="fixed">
+    <parent link="pivot_XpYn"/>
+    <child link="seg_XpYn_Xpos"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- seg 4: pXpYn → cYn  L=0.4581m ang=-169.3°=-2.9544rad -->
+  <link name="seg_XpYn_Yneg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000650"/>
+      <inertia ixx="2.0e-9" ixy="0" ixz="0"
+               iyy="6.10e-6" iyz="0"
+               izz="6.10e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.2251 -0.0424 0.0" rpy="0 0 -2.9544"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry>
+      <material name="beige"/>
+    </visual>
+  </link>
+  <joint name="joint_seg_XpYn_Yneg" type="fixed">
+    <parent link="pivot_XpYn"/>
+    <child link="seg_XpYn_Yneg"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- seg 5: pXnYp → cXn  L=0.2769m ang=-132.3°=-2.3088rad -->
+  <link name="seg_XnYp_Xneg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000393"/>
+      <inertia ixx="1.2e-9" ixy="0" ixz="0"
+               iyy="2.24e-6" iyz="0"
+               izz="2.24e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0932 -0.1023 0.0" rpy="0 0 -2.3088"/>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+      <material name="beige"/>
+    </visual>
+  </link>
+  <joint name="joint_seg_XnYp_Xneg" type="fixed">
+    <parent link="pivot_XnYp"/>
+    <child link="seg_XnYp_Xneg"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- seg 6: pXnYp → cYp  L=0.4581m ang=+10.7°=+0.1868rad -->
+  <link name="seg_XnYp_Ypos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000650"/>
+      <inertia ixx="2.0e-9" ixy="0" ixz="0"
+               iyy="6.10e-6" iyz="0"
+               izz="6.10e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.2251 0.0424 0.0" rpy="0 0 0.1868"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry>
+      <material name="beige"/>
+    </visual>
+  </link>
+  <joint name="joint_seg_XnYp_Ypos" type="fixed">
+    <parent link="pivot_XnYp"/>
+    <child link="seg_XnYp_Ypos"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- seg 7: pXnYn → cXn  L=0.2769m ang=+132.3°=+2.3088rad -->
+  <link name="seg_XnYn_Xneg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000393"/>
+      <inertia ixx="1.2e-9" ixy="0" ixz="0"
+               iyy="2.24e-6" iyz="0"
+               izz="2.24e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0932 0.1023 0.0" rpy="0 0 2.3088"/>
+      <geometry><box size="0.2769 0.008 0.008"/></geometry>
+      <material name="beige"/>
+    </visual>
+  </link>
+  <joint name="joint_seg_XnYn_Xneg" type="fixed">
+    <parent link="pivot_XnYn"/>
+    <child link="seg_XnYn_Xneg"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- seg 8: pXnYn → cYn  L=0.4581m ang=-10.7°=-0.1868rad -->
+  <link name="seg_XnYn_Yneg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.000650"/>
+      <inertia ixx="2.0e-9" ixy="0" ixz="0"
+               iyy="6.10e-6" iyz="0"
+               izz="6.10e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.2251 -0.0424 0.0" rpy="0 0 -0.1868"/>
+      <geometry><box size="0.4581 0.008 0.008"/></geometry>
+      <material name="beige"/>
+    </visual>
+  </link>
+  <joint name="joint_seg_XnYn_Yneg" type="fixed">
+    <parent link="pivot_XnYn"/>
+    <child link="seg_XnYn_Yneg"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ══════════════════════════════════════
+       ROUES ×4 — continuous
+       Paper: 10 rayons FG 8mm, L=25cm, hub 3D
+       Modèle: cylindre r=0.25m, h=0.04m, m=0.11kg
+       Ixx=Izz=m/4*r²+m/12*h²=0.001734 (axes perpendiculaires)
+       Iyy=m/2*r²=0.003438 (axe de spin)
+
+       OFFSET ±0.05m depuis connecteur:
+         wheel_X_*: offset en ±Y (axe de spin = Y, avance selon X)
+         wheel_Y_*: offset en ±Y (axe de spin = X, skid passif)
+  ══════════════════════════════════════ -->
+
+  <link name="wheel_X_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.001734" ixy="0" ixz="0"
+               iyy="0.003438" iyz="0"
+               izz="0.001734"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+      <material name="dark"><color rgba="0.12 0.12 0.12 1.0"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_X_pos" type="continuous">
+    <parent link="connector_X_pos"/>
+    <child link="wheel_X_pos"/>
+    <origin xyz="0.0 0.05 0.0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+  <link name="wheel_X_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.001734" ixy="0" ixz="0"
+               iyy="0.003438" iyz="0"
+               izz="0.001734"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+      <material name="dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_X_neg" type="continuous">
+    <parent link="connector_X_neg"/>
+    <child link="wheel_X_neg"/>
+    <origin xyz="0.0 -0.05 0.0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+  <link name="wheel_Y_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.003438" ixy="0" ixz="0"
+               iyy="0.001734" iyz="0"
+               izz="0.001734"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+      <material name="dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_Y_pos" type="continuous">
+    <parent link="connector_Y_pos"/>
+    <child link="wheel_Y_pos"/>
+    <!-- FIX v3: offset en Y (axe normal à la roue), pas X -->
+    <origin xyz="0.0 0.05 0.0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+  <link name="wheel_Y_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.003438" ixy="0" ixz="0"
+               iyy="0.001734" iyz="0"
+               izz="0.001734"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+      <material name="dark"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_Y_neg" type="continuous">
+    <parent link="connector_Y_neg"/>
+    <child link="wheel_Y_neg"/>
+    <!-- FIX v3: offset en -Y -->
+    <origin xyz="0.0 -0.05 0.0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+</robot>
