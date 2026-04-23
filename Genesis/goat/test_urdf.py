@@ -21,7 +21,7 @@ scene.add_entity(gs.morphs.Plane())
 
 goat = scene.add_entity(
     gs.morphs.URDF(
-        file="goat_v4_cable_driven.urdf",
+        file="goat_v3_4seg.urdf",
         pos=(0.0, 0.0, 0.35),
         euler=(0.0, 0.0, 0.0),
         fixed=False,

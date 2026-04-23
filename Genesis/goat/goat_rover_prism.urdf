@@ -1,0 +1,376 @@
+<?xml version="1.0"?>
+<robot name="goat_rover">
+
+  <!--
+    GOAT ROVER — URDF v5
+    ════════════════════════════════════════════════════════════════════
+    Architecture :
+      base_link (payload central, disque)
+        ├── arm_X_pos  (bras rigide fixe, tube FG axe +X)
+        │     └── connector_X_pos  (joint prismatique ±X, spring k=2000)
+        │             └── wheel_X_pos  (continuous, axe rot Y)
+        ├── arm_X_neg  symétrique
+        ├── arm_Y_pos  (bras rigide fixe, tube FG axe +Y)
+        │     └── connector_Y_pos  (joint prismatique ±Y, spring k=2000)
+        │             └── wheel_Y_pos  (continuous, axe rot X)  ← moteur principal
+        └── arm_Y_neg  symétrique
+
+    Traversée du gap :
+      - Robot avance en +Y  (axe Y = direction de traversée)
+      - Largeur du robot    = L2 = 0.5787 m (distance wheel_Y_pos ↔ wheel_Y_neg)
+      - Moteurs principaux  = wheel_joint_Y_pos + wheel_joint_Y_neg
+      - wheel_X_pos/neg     = passives (roulent librement)
+      - Couloir             = murs parallèles à l'axe Y, gap dans X
+
+    Z_INIT = 0.50 m → bras à z=0, roues à z=0.25, contact sol à z=0
+    ════════════════════════════════════════════════════════════════════
+  -->
+
+  <!-- ══ PAYLOAD ══ -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.8"/>
+      <inertia ixx="0.05" ixy="0" ixz="0"
+               iyy="0.05" iyz="0"
+               izz="0.08"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.08" length="0.06"/></geometry>
+      <material name="payload"><color rgba="0.85 0.85 0.90 1.0"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.08" length="0.06"/></geometry>
+    </collision>
+  </link>
+
+  <!-- ══ BRAS X+ (fixe, visuel tube FG) ══ -->
+  <link name="arm_X_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="1e-5" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.3183 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.005" length="0.6366"/></geometry>
+      <material name="fg_beige"><color rgba="0.87 0.82 0.68 1.0"/></material>
+    </visual>
+  </link>
+  <joint name="joint_arm_X_pos" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_X_pos"/>
+    <origin xyz="0.6366 0.0 0.0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ══ CONNECTEUR X+ (prismatique ±X) ══ -->
+  <link name="connector_X_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.10"/>
+      <inertia ixx="2e-5" ixy="0" ixz="0" iyy="2e-4" iyz="0" izz="2e-4"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.016" length="0.12"/></geometry>
+      <material name="connector"><color rgba="0.25 0.25 0.25 1.0"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.016" length="0.12"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_X_pos" type="prismatic">
+    <parent link="arm_X_pos"/>
+    <child link="connector_X_pos"/>
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.18" upper="0.18" effort="300.0" velocity="2.0"/>
+    <dynamics damping="120.0" friction="0.0"/>
+  </joint>
+
+  <!-- ══ ROUE X+ (passive, axe rot Y) ══ -->
+  <link name="wheel_X_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.00173" ixy="0" ixz="0"
+               iyy="0.00344" iyz="0"
+               izz="0.00173"/>
+    </inertial>
+    <!-- Hub -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.05" length="0.06"/></geometry>
+      <material name="hub"><color rgba="0.35 0.35 0.35 1.0"/></material>
+    </visual>
+    <!-- Rayons FG (4 rayons croisés) -->
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0.7854"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 1.5708"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 2.3562"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <!-- Jante (anneau) -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.25" length="0.012"/></geometry>
+      <material name="rim"><color rgba="0.80 0.75 0.60 1.0"/></material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_X_pos" type="continuous">
+    <parent link="connector_X_pos"/>
+    <child link="wheel_X_pos"/>
+    <origin xyz="0.0 0.0 -0.25" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+  <!-- ══ BRAS X- ══ -->
+  <link name="arm_X_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="1e-5" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
+    </inertial>
+    <visual>
+      <origin xyz="0.3183 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.005" length="0.6366"/></geometry>
+      <material name="fg_beige"/>
+    </visual>
+  </link>
+  <joint name="joint_arm_X_neg" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_X_neg"/>
+    <origin xyz="-0.6366 0.0 0.0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ══ CONNECTEUR X- ══ -->
+  <link name="connector_X_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.10"/>
+      <inertia ixx="2e-5" ixy="0" ixz="0" iyy="2e-4" iyz="0" izz="2e-4"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.016" length="0.12"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.016" length="0.12"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_X_neg" type="prismatic">
+    <parent link="arm_X_neg"/>
+    <child link="connector_X_neg"/>
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+    <axis xyz="-1 0 0"/>
+    <limit lower="-0.18" upper="0.18" effort="300.0" velocity="2.0"/>
+    <dynamics damping="120.0" friction="0.0"/>
+  </joint>
+
+  <!-- ══ ROUE X- ══ -->
+  <link name="wheel_X_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.00173" ixy="0" ixz="0"
+               iyy="0.00344" iyz="0"
+               izz="0.00173"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.05" length="0.06"/></geometry>
+      <material name="hub"/>
+    </visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0.7854"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 1.5708"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 2.3562"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.25" length="0.012"/></geometry>
+      <material name="rim"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5708 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_X_neg" type="continuous">
+    <parent link="connector_X_neg"/>
+    <child link="wheel_X_neg"/>
+    <origin xyz="0.0 0.0 -0.25" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+  <!-- ══ BRAS Y+ (axe court, direction d'avance) ══ -->
+  <link name="arm_Y_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-5" iyz="0" izz="1e-4"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 -0.1447 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.005" length="0.2894"/></geometry>
+      <material name="fg_beige"/>
+    </visual>
+  </link>
+  <joint name="joint_arm_Y_pos" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_Y_pos"/>
+    <origin xyz="0.0 0.2894 0.0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ══ CONNECTEUR Y+ ══ -->
+  <link name="connector_Y_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.10"/>
+      <inertia ixx="2e-4" ixy="0" ixz="0" iyy="2e-5" iyz="0" izz="2e-4"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.016" length="0.12"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.016" length="0.12"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_Y_pos" type="prismatic">
+    <parent link="arm_Y_pos"/>
+    <child link="connector_Y_pos"/>
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.10" upper="0.10" effort="300.0" velocity="2.0"/>
+    <dynamics damping="120.0" friction="0.0"/>
+  </joint>
+
+  <!-- ══ ROUE Y+ (motrice, axe rot X) ══ -->
+  <link name="wheel_Y_pos">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.00344" ixy="0" ixz="0"
+               iyy="0.00173" iyz="0"
+               izz="0.00173"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.05" length="0.06"/></geometry>
+      <material name="hub_green"><color rgba="0.1 0.7 0.2 1.0"/></material>
+    </visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0.7854"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 1.5708"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 2.3562"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.25" length="0.012"/></geometry>
+      <material name="rim"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_Y_pos" type="continuous">
+    <parent link="connector_Y_pos"/>
+    <child link="wheel_Y_pos"/>
+    <origin xyz="0.0 0.0 -0.25" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+  <!-- ══ BRAS Y- ══ -->
+  <link name="arm_Y_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-5" iyz="0" izz="1e-4"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0.1447 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.005" length="0.2894"/></geometry>
+      <material name="fg_beige"/>
+    </visual>
+  </link>
+  <joint name="joint_arm_Y_neg" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_Y_neg"/>
+    <origin xyz="0.0 -0.2894 0.0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ══ CONNECTEUR Y- ══ -->
+  <link name="connector_Y_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.10"/>
+      <inertia ixx="2e-4" ixy="0" ixz="0" iyy="2e-5" iyz="0" izz="2e-4"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.016" length="0.12"/></geometry>
+      <material name="connector"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.016" length="0.12"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint_connector_Y_neg" type="prismatic">
+    <parent link="arm_Y_neg"/>
+    <child link="connector_Y_neg"/>
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-0.10" upper="0.10" effort="300.0" velocity="2.0"/>
+    <dynamics damping="120.0" friction="0.0"/>
+  </joint>
+
+  <!-- ══ ROUE Y- (motrice, axe rot X) ══ -->
+  <link name="wheel_Y_neg">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.11"/>
+      <inertia ixx="0.00344" ixy="0" ixz="0"
+               iyy="0.00173" iyz="0"
+               izz="0.00173"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.05" length="0.06"/></geometry>
+      <material name="hub_green"/>
+    </visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 0.7854"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 1.5708"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual><origin xyz="0 0 0" rpy="0 0 2.3562"/><geometry><box size="0.50 0.007 0.007"/></geometry><material name="fg_beige"/></visual>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.25" length="0.012"/></geometry>
+      <material name="rim"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+      <geometry><cylinder radius="0.25" length="0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="wheel_joint_Y_neg" type="continuous">
+    <parent link="connector_Y_neg"/>
+    <child link="wheel_Y_neg"/>
+    <origin xyz="0.0 0.0 -0.25" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <dynamics damping="0.04" friction="0.01"/>
+  </joint>
+
+</robot>

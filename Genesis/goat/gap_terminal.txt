@@ -1,0 +1,69 @@
+==============================================================
+GOAT ROVER — Genesis Simulation v2
+Polzin et al., Sci. Robot. 10, eadp6419 (2025)
+==============================================================
+  R_frame=0.6366m | r=2.2 | l1=1.2732m | l2=0.5787m
+  track_width=0.5787m | wheel_r=0.25m | Z_init=0.25m
+
+  [GAP] Couloir: x=[2.5, 4.5]m | gap=50cm | robot_width=57.9cm
+[38;5;226m[Genesis] [12:19:16] [WARNING] Link 'pivot_XpYp' has dubious inertia [ixx=9.940e-06,iyy=9.940e-06,izz=1.603e-06] compared to the estimate from geometry [ixx=7.427e-05,iyy=4.426e-04,izz=5.148e-04] given material density 1500.000.[0m
+[38;5;226m[Genesis] [12:19:16] [WARNING] Link 'pivot_XpYn' has dubious inertia [ixx=9.940e-06,iyy=9.940e-06,izz=1.603e-06] compared to the estimate from geometry [ixx=7.427e-05,iyy=4.426e-04,izz=5.148e-04] given material density 1500.000.[0m
+[38;5;226m[Genesis] [12:19:16] [WARNING] Link 'pivot_XnYp' has dubious inertia [ixx=9.940e-06,iyy=9.940e-06,izz=1.603e-06] compared to the estimate from geometry [ixx=7.425e-05,iyy=4.426e-04,izz=5.148e-04] given material density 1500.000.[0m
+[38;5;226m[Genesis] [12:19:16] [WARNING] Link 'pivot_XnYn' has dubious inertia [ixx=9.940e-06,iyy=9.940e-06,izz=1.603e-06] compared to the estimate from geometry [ixx=7.425e-05,iyy=4.426e-04,izz=5.148e-04] given material density 1500.000.[0m
+[38;5;226m[Genesis] [12:19:16] [WARNING] Link 'wheel_X_pos' has dubious mass 0.110 compared to the estimate from geometry 11.781 given material density 1500.[0m
+[38;5;226m[Genesis] [12:19:16] [WARNING] Link 'wheel_X_neg' has dubious mass 0.110 compared to the estimate from geometry 11.781 given material density 1500.[0m
+[38;5;226m[Genesis] [12:19:16] [WARNING] Link 'wheel_Y_pos' has dubious mass 0.110 compared to the estimate from geometry 11.781 given material density 1500.[0m
+[38;5;226m[Genesis] [12:19:16] [WARNING] Link 'wheel_Y_neg' has dubious mass 0.110 compared to the estimate from geometry 11.781 given material density 1500.[0m
+[38;5;226m[Genesis] [12:19:18] [WARNING] Filtered out geometry pairs causing self-collision for the neutral configuration (qpos0): (4, 10), (4, 13), (5, 16), (5, 19), (6, 9), (6, 15), (7, 12), (7, 18), (9, 15), (10, 13), (10, 20), (12, 18), (12, 23), (13, 20), (16, 19), (16, 21), (18, 23), (19, 21). Consider tuning Morph option 'decompose_robot_error_threshold' or specify dedicated collision meshes. This behavior can be disabled by setting Morph option 'enable_neutral_collision=True'.[0m
+[38;5;226m[Genesis] [12:19:20] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [12:19:20] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [12:19:20] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [12:19:20] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [12:19:20] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [12:19:20] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [12:19:20] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[38;5;226m[Genesis] [12:19:20] [WARNING] This property is deprecated and will be removed in future release. Please use 'dofs_idx_local' instead.[0m
+[Genesis] 13 links chargés.
+
+[SETTLE] Stabilisation (2s)...
+  [SETTLE] t=0.0s | pos=(-0.000,0.000,0.250)m | v_body=0.000m/s v_wheel=-0.000m/s | pivots=[-0.0°,-0.0°,-0.0°,-0.0°]
+  [SETTLE] t=1.0s | pos=(-0.000,0.000,0.250)m | v_body=0.000m/s v_wheel=-0.000m/s | pivots=[-0.0°,-0.0°,-0.0°,-0.0°]
+
+[GAP] Traversée gap=50 cm (paper Fig. 3B, robot width=57.9 cm)
+  Robot doit se comprimer de 7.9 cm
+  Pendants de compliance: PIVOT_KP=1.5 N·m/rad | TENDON_K=2000.0 N/m
+  [GAP] t=0.0s | pos=(0.000,0.000,0.250)m | v_body=0.036m/s v_wheel=0.102m/s | pivots=[-0.0°,-0.0°,-0.0°,-0.0°]
+    → Approche: 0.00m / 2.50m
+  [GAP] t=1.0s | pos=(0.098,-0.002,0.246)m | v_body=0.001m/s v_wheel=0.001m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=2.0s | pos=(0.098,-0.001,0.246)m | v_body=0.001m/s v_wheel=0.001m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=3.0s | pos=(0.098,-0.000,0.246)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=4.0s | pos=(0.098,-0.000,0.246)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=5.0s | pos=(0.098,0.000,0.246)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=6.0s | pos=(0.098,0.000,0.246)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=7.0s | pos=(0.098,0.001,0.246)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=8.0s | pos=(0.098,0.001,0.246)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=9.0s | pos=(0.097,0.001,0.246)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=10.0s | pos=(0.097,0.001,0.246)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=11.0s | pos=(0.097,0.001,0.246)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=12.0s | pos=(0.097,0.001,0.247)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=13.0s | pos=(0.097,0.001,0.247)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+  [GAP] t=14.0s | pos=(0.097,0.001,0.247)m | v_body=0.000m/s v_wheel=0.000m/s | pivots=[0.0°,-0.0°,-0.0°,0.0°]
+    → Approche: 0.10m / 2.50m
+
+  → dist totale=0.10m | dérive_lat=1.6%
+  ✗ Robot bloqué avant le gap (dist < approach_dist)
+
+[DONE] Simulation terminée.

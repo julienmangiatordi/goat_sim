@@ -69,16 +69,16 @@ Z_INIT       = WHEEL_R                 # 0.25 m (roues au sol)
 L1_CIRCLE    = L1_ROVER
 L2_CIRCLE    = L1_ROVER                # l1=l2 → r=1
 
-# Dynamiques tendons (câble PE 0.6mm, k réduit pour stabilité dt=0.002s)
-# Légèrement augmentés v2 pour meilleure réactivité lors du gap
-TENDON_K     = 2000.0   # N/m   (était 1500 en v1)
-TENDON_DAMP  = 80.0     # N·s/m (était 60 en v1)
+# Dynamiques tendons (câble PE 0.6mm, k augmenté pour meilleure déformation)
+# Augmentés de manière significative v3 pour visible morphing pendant gap
+TENDON_K     = 3000.0   # N/m   (était 2000 en v2, 1500 en v1)
+TENDON_DAMP  = 120.0     # N·s/m (était 80 en v2, 60 en v1)
 
 # Compliance frame: EI/L pour tige FG 5mm ø, L=0.5m
 # E=45 GPa, I=π*d⁴/64=3.07e-11 m⁴ → EI=1.38 N·m² → k=EI/L=2.76 N·m/rad
-# Légèrement réduit en v2 pour que la frame plie davantage sous contact latéral
-PIVOT_KP     = 1.5      # N·m/rad  (était 3.0 en v1)
-PIVOT_KV     = 0.3      # N·m·s/rad (était 0.5 en v1)
+# Augmenté en v3 pour meilleure réaction aux murs tout en restant stable
+PIVOT_KP     = 3.0      # N·m/rad  (était 1.5 en v2, 3.0 en v1)
+PIVOT_KV     = 0.6      # N·m·s/rad (était 0.3 en v2, 0.5 en v1)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CLASSE PRINCIPALE
@@ -107,6 +107,13 @@ class GOATRover:
             e.get_joint("joint_pivot_XnYn").dof_idx_local,
         ])
 
+        self.dofs_connectors = np.array([
+            e.get_joint("joint_connector_X_pos").dof_idx_local,
+            e.get_joint("joint_connector_X_neg").dof_idx_local,
+            e.get_joint("joint_connector_Y_pos").dof_idx_local,
+            e.get_joint("joint_connector_Y_neg").dof_idx_local,
+        ])
+
     def configure_gains(self):
         e = self.entity
         # Moteurs roues: 45 kg·cm = 4.41 N·m (paper)
@@ -120,6 +127,11 @@ class GOATRover:
         e.set_dofs_kp(np.zeros(4), dofs_idx_local=self.dofs_pivots)
         e.set_dofs_kv(np.zeros(4), dofs_idx_local=self.dofs_pivots)
         e.control_dofs_position(np.zeros(4), dofs_idx_local=self.dofs_pivots)
+
+        # Connecteurs : verrouillés activement (PD fort sur position=0)
+        e.set_dofs_kp(np.full(4, 2000.0), dofs_idx_local=self.dofs_connectors)
+        e.set_dofs_kv(np.full(4, 200.0),  dofs_idx_local=self.dofs_connectors)
+        e.control_dofs_position(np.zeros(4), dofs_idx_local=self.dofs_connectors)
 
     # ── Locomotion (paper eq. 3 & 4) ───────────────────────────────────────
     def skid_steer(self, v_lin: float, v_ang: float, track: float = TRACK_WIDTH):
@@ -172,98 +184,102 @@ class GOATRover:
         self._idx_conn_Yp = e.get_link("connector_Y_pos").idx
         self._idx_conn_Yn = e.get_link("connector_Y_neg").idx
 
-    def apply_tendon_forces(self, l1: float, l2: float):
-        e       = self.entity
+    def apply_tendon_forces(self, l1: float, l2: float, k_override=None):
+        k = k_override if k_override is not None else TENDON_K
+        e = self.entity
         payload = e.get_link("base_link")
-        p_pos   = np.array(payload.get_pos().tolist())
+        p_pos = np.array(payload.get_pos().tolist())
         try:
             p_vel = np.array(payload.get_vel().tolist())
         except Exception:
             p_vel = np.zeros(3)
 
+        # ── Tendons câble (unilatéraux) ──────────────────────────────────
         tendons = [
             ("connector_X_pos", self._idx_conn_Xp, l1 / 2.0),
             ("connector_X_neg", self._idx_conn_Xn, l1 / 2.0),
             ("connector_Y_pos", self._idx_conn_Yp, l2 / 2.0),
             ("connector_Y_neg", self._idx_conn_Yn, l2 / 2.0),
         ]
-
         for conn_name, conn_idx, l_half in tendons:
-            conn  = e.get_link(conn_name)
+            conn = e.get_link(conn_name)
             c_pos = np.array(conn.get_pos().tolist())
             delta = p_pos - c_pos
-            dist  = float(np.linalg.norm(delta)) + 1e-9
-            unit  = delta / dist
+            dist = float(np.linalg.norm(delta)) + 1e-9
+            unit = delta / dist
             stretch = dist - l_half
-
             if stretch > 0.0:
                 try:
                     c_vel = np.array(conn.get_vel().tolist())
                 except Exception:
                     c_vel = np.zeros(3)
                 v_axial = float(np.dot(p_vel - c_vel, unit))
-                F_mag   = max(TENDON_K * stretch + TENDON_DAMP * v_axial, 0.0)
-                F_vec   = F_mag * unit
+                F_mag = max(k * stretch + TENDON_DAMP * v_axial, 0.0)
+                F_vec = F_mag * unit
+                self._solver.apply_links_external_force(
+                    force=np.array([F_vec]), links_idx=[conn_idx])
+                self._solver.apply_links_external_force(
+                    force=np.array([-F_vec]), links_idx=[self._idx_payload])
 
-                self._solver.apply_links_external_force(
-                    force=np.array([F_vec]),
-                    links_idx=[conn_idx]
-                )
-                self._solver.apply_links_external_force(
-                    force=np.array([-F_vec]),
-                    links_idx=[self._idx_payload]
-                )
-        # rappel élastique pivot → connecteur parent
+        # ── Rappel élastique pivot ↔ connecteur (BIDIRECTIONNEL) ─────────
+        # L0_map défini ICI, dans la portée de la méthode
+        L0_map = {
+            ("pivot_XpYp", "connector_X_pos"): 0.1864,
+            ("pivot_XpYp", "connector_Y_pos"): 0.0848,
+            ("pivot_XpYn", "connector_X_pos"): 0.1864,
+            ("pivot_XpYn", "connector_Y_neg"): 0.0848,
+            ("pivot_XnYp", "connector_X_neg"): 0.1864,
+            ("pivot_XnYp", "connector_Y_pos"): 0.0848,
+            ("pivot_XnYn", "connector_X_neg"): 0.1864,
+            ("pivot_XnYn", "connector_Y_neg"): 0.0848,
+        }
+
         pivot_connector_pairs = [
             ("pivot_XpYp", "connector_X_pos", "connector_Y_pos"),
             ("pivot_XpYn", "connector_X_pos", "connector_Y_neg"),
             ("pivot_XnYp", "connector_X_neg", "connector_Y_pos"),
             ("pivot_XnYn", "connector_X_neg", "connector_Y_neg"),
         ]
-        K_pivot = 500.0   # N/m — raideur de rappel frame
+
+        K_pivot = 5000.0  # N/m — raide pour propager compression/tension
+        D_pivot = 20.0    # N·s/m
 
         for pname, cname1, cname2 in pivot_connector_pairs:
-            piv  = self.entity.get_link(pname)
-            p_p  = np.array(piv.get_pos().tolist())
-            
+            piv = self.entity.get_link(pname)
+            p_p = np.array(piv.get_pos().tolist())
+            try:
+                p_vel_piv = np.array(piv.get_vel().tolist())
+            except Exception:
+                p_vel_piv = np.zeros(3)
+
             for cname in (cname1, cname2):
                 conn = self.entity.get_link(cname)
-                c_p  = np.array(conn.get_pos().tolist())
-                
-                # Position de repos attendue (géométrie URDF)
-                # on récupère le vecteur actuel pivot→connecteur
+                c_p = np.array(conn.get_pos().tolist())
+                try:
+                    c_vel = np.array(conn.get_vel().tolist())
+                except Exception:
+                    c_vel = np.zeros(3)
+
                 delta = c_p - p_p
-                dist  = np.linalg.norm(delta) + 1e-9
-                
-                # Longueur de repos = distance URDF nominale
-                # XpYp → connXp : 0.6366-0.4502=0.1864m
-                # XpYp → connYp : 0.2894-0.2046=0.0848m  
-                L0_map = {
-                    ("pivot_XpYp","connector_X_pos"): 0.1864,
-                    ("pivot_XpYp","connector_Y_pos"): 0.0848,
-                    ("pivot_XpYn","connector_X_pos"): 0.1864,
-                    ("pivot_XpYn","connector_Y_neg"): 0.0848,
-                    ("pivot_XnYp","connector_X_neg"): 0.1864,
-                    ("pivot_XnYp","connector_Y_pos"): 0.0848,
-                    ("pivot_XnYn","connector_X_neg"): 0.1864,
-                    ("pivot_XnYn","connector_Y_neg"): 0.0848,
-                }
+                dist = np.linalg.norm(delta) + 1e-9
                 L0 = L0_map[(pname, cname)]
                 stretch = dist - L0
-                
-                if abs(stretch) > 1e-4:
-                    F_mag = K_pivot * stretch
-                    F_vec = F_mag * (delta / dist)
-                    
-                    c_idx = self.entity.get_link(cname).idx
-                    p_idx = piv.idx
-                    
-                    # Force sur connecteur (tire vers pivot si étiré)
-                    self._solver.apply_links_external_force(
-                        force=np.array([-F_vec]), links_idx=[c_idx])
-                    # Réaction sur pivot
-                    self._solver.apply_links_external_force(
-                        force=np.array([F_vec]),  links_idx=[p_idx])
+                v_axial = np.dot(c_vel - p_vel_piv, delta / dist)
+
+                # BIDIRECTIONNEL : compression ET tension
+                F_mag = K_pivot * stretch + D_pivot * v_axial
+                F_vec = F_mag * (delta / dist)
+
+                c_idx = self.entity.get_link(cname).idx
+                p_idx = piv.idx
+
+                self._solver.apply_links_external_force(
+                    force=np.array([-F_vec]), links_idx=[c_idx])
+                self._solver.apply_links_external_force(
+                    force=np.array([F_vec]), links_idx=[p_idx])
+        self.entity.control_dofs_position(
+        np.zeros(4), dofs_idx_local=self.dofs_connectors)
+            
 
 
     # ── Logging ─────────────────────────────────────────────────────────────
@@ -281,7 +297,7 @@ class GOATRover:
               f"pivots=[{','.join(f'{a:.1f}°' for a in pivs)}]")
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SCÉNARIOS (calqués sur les expériences du paper)
+# SCÉNARIOS (a partir du paper)
 # ══════════════════════════════════════════════════════════════════════════════
 
 def settle(goat, scene, duration=2.0):
@@ -406,6 +422,9 @@ def scenario_gap(goat, scene, gap_width=0.50, approach_dist=2.5, duration=15.0):
     steps  = int(duration / 0.002)
     t_log  = 0.0
     pos0   = np.array(goat.entity.get_link("base_link").get_pos().tolist())
+    
+    # Enregistrement des angles pivot pour logging
+    pivot_angles = []
 
     # Phase 1: approche (robot se déplace de 0 à approach_dist en X)
     # Phase 2: traversée du couloir (les murs sont placés à x=approach_dist)
@@ -417,34 +436,60 @@ def scenario_gap(goat, scene, gap_width=0.50, approach_dist=2.5, duration=15.0):
         pos = np.array(goat.entity.get_link("base_link").get_pos().tolist())
         vel = np.array(goat.entity.get_link("base_link").get_vel().tolist())
 
-        # Erreur latérale
+        # Erreur latérale et dérive yaw globale
         y_err = pos[1]
         y_dot = vel[1]          # dérivée = vitesse latérale
-
-        # Contrôleur PD : corrige position ET vitesse latérale
-        Kp = 3.0
-        Kd = 2.0
-        v_ang = -Kp * y_err - Kd * y_dot
-        v_ang = np.clip(v_ang, -2.0, 2.0)
+        
+        # Estimation yaw (approx par rotation du vecteur velocity)
+        vx, vy = vel[0], vel[1]
+        if np.linalg.norm([vx, vy]) > 0.1:
+            yaw_vel = np.arctan2(vy, vx)  # orientation du vecteur vélocité
+        else:
+            yaw_vel = 0.0
+            
+        # On souhaite que le robot avance en X pur (yaw_error ≈ 0)
+        yaw_err = yaw_vel  # devrait rester proche de 0
+        
+        # Contrôleur PD combiné pour corriger Y et yaw
+        # gain longitudinal sur Y en premier, puis gain rotationnel
+        Kp_y = 4.0    # proportionnel sur position Y
+        Kd_y = 3.0    # dérivé sur vitesse Y
+        Kp_yaw = 1.5  # proportionnel sur orientation
+        Kd_yaw = 0.5  # dérivé sur vitesse angulaire (difficile à estimer)
+        
+        v_ang = -(Kp_y * y_err + Kd_y * y_dot + Kp_yaw * yaw_err)
+        v_ang = np.clip(v_ang, -1.5, 1.5)  # saturation raisonnable
 
         # Locomotion purement en X, fidèle aux eq. 3–4
-        goat.skid_steer_x_only(v_lin=1.4, v_ang=v_ang)      #v_lin=1.4 m/s pour laisser la compliance agir (paper Fig. 3B)
+        goat.skid_steer_x_only(v_lin=1.4, v_ang=v_ang)      
 
-        goat.apply_tendon_forces(L1_ROVER, L2_ROVER)
+        goat.apply_tendon_forces(L1_ROVER, L2_ROVER, k_override=6000.0)
         scene.step()
+        
+        # Enregistrement des angles pivot pour analyse de déformation
+        if i % 100 == 0:
+            pivs = np.degrees(
+                goat.entity.get_dofs_position(dofs_idx_local=goat.dofs_pivots).tolist())
+            pivot_angles.append((t, pivs.copy()))
 
         if t >= t_log:
             pos = np.array(goat.entity.get_link("base_link").get_pos().tolist())
             x_from_start = pos[0] - pos0[0]
+            y_err_now = pos[1]
+            pivs = np.degrees(
+                goat.entity.get_dofs_position(dofs_idx_local=goat.dofs_pivots).tolist())
             goat.log(t, "GAP")
-
-            # Indique la phase en cours
+            
+            # Indique la phase en cours + déformation
             if x_from_start < approach_dist:
-                print(f"    → Approche: {x_from_start:.2f}m / {approach_dist:.2f}m")
+                print(f"    → Approche: {x_from_start:.2f}m / {approach_dist:.2f}m | "
+                      f"y_err={y_err_now:.3f}m | pivots={pivs}°")
             elif x_from_start < approach_dist + 1.5:
-                print(f"    → DANS LE COULOIR (compression active attendue)")
+                print(f"    → DANS LE COULOIR (compression active) | "
+                      f"y_err={y_err_now:.3f}m | pivots={pivs}°")
             else:
-                print(f"    → Sortie du couloir, frame revient à sa forme")
+                print(f"    → Sortie couloir, frame revient à forme | "
+                      f"y_err={y_err_now:.3f}m | pivots={pivs}°")
             t_log += 1.0
 
     pos1  = np.array(goat.entity.get_link("base_link").get_pos().tolist())
