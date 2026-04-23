@@ -1,7 +1,4 @@
 """
-goat_rover_sim.py — Simulation Genesis du robot GOAT en configuration ROVER
-Polzin et al., Sci. Robot. 10, eadp6419 (2025)
-
 Usage:
 python goat_rover_sim_v2.py                    # tous les scénarios, viewer ON
 python goat_rover_sim_v2.py --scenario straight
@@ -11,7 +8,7 @@ python goat_rover_sim_v2.py --scenario gap      # ← NOUVEAU: Fig. 3B du paper
 python goat_rover_sim_v2.py --no-viewer         # headless
 python goat_rover_sim_v2.py --backend cuda      # GPU
 
-ARCHITECTURE (fidèle au paper, Materials & Methods):
+ARCHITECTURE:
 ────────────────────────────────────────────────────
 Cycle fermé câble = impossible en URDF → simulé en Python par apply_force().
 
@@ -38,7 +35,7 @@ Données numériques du paper:
   Winch torque = 3.92 N·m  (40 kg·cm, paper)
   Mass total = 2.80 kg  (payload 1.8 kg + frame/roues 1.0 kg, Table 1)
 
-SCÉNARIO GAP (nouveau, Fig. 3B):
+SCÉNARIO GAP (fig. 3B):
   - Deux murs parallèles créant un couloir de 50 cm de large
   - Robot (largeur Y = L2_ROVER = 0.5787 m) doit se comprimer pour passer
   - Attendu: front compresses, back bulges (paper Fig. 3B)
@@ -52,7 +49,7 @@ import numpy as np
 import genesis as gs
 
 # ══════════════════════════════════════════════════════════════════════════════
-# CONSTANTES DU ROBOT — toutes issues du paper
+# CONSTANTES DU ROBOT
 # ══════════════════════════════════════════════════════════════════════════════
 
 R_FRAME      = 4.0 / (2 * math.pi)     # 0.6366 m
@@ -582,7 +579,7 @@ def main():
         gs.morphs.URDF(
             file="goat_rover_2.urdf",
             pos=(0.0, 0.0, Z_INIT),
-            euler=(0.0, 0.0, 0.0),
+            euler=(90.0, 0.0, 0.0),
             fixed=False))
 
     scene.build()

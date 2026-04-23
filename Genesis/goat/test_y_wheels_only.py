@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Test script: Y-wheels-only propulsion in open space (no walls)
 """

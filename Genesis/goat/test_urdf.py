@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Quick URDF geometry test - just load and inspect"""
 
 import genesis as gs
