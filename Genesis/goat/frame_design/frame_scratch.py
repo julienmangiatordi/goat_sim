@@ -114,73 +114,59 @@ def create_lens_frame_mesh(R=0.32, r_rod=0.006, n_pts=120, n_sections=14, n_stru
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
-    # Initialisation Genesis
-    print("Initializing Genesis...")
-    gs.init(seed=0, precision="32", logging_level="info")
-    
-    # Paramètres géométriques
-    R_FRAME = 4.0 / (2 * math.pi)  # 0.6366 m
-    
-    # Créer le mesh du frame
-    print("Creating frame mesh...")
+    gs.init(seed=0, precision="32", logging_level="info", backend=gs.cpu)
+
+    R_FRAME = 4.0 / (2 * math.pi)
     obj_path = "goat_lens_simulation.obj"
+    
     frame_mesh = create_lens_frame_mesh(
         R=R_FRAME,
-        r_rod=0.005,  # 5mm rayon
-        n_pts=60,     # Points par anneau (réduit pour perfs)
-        n_sections=8, # Sections cylindre
-        n_struts=6,   # Struts de liaison
+        r_rod=0.015,    # Plus épais → meilleur rapport d'aspect des tets
+        n_pts=16,       # Moins de segments
+        n_sections=6,
+        n_struts=4,
         export_obj=obj_path
     )
-    
-    # Créer la scène Genesis
-    print("Creating Genesis scene...")
-    dt_fem = 1e-4  # Timestep FEM
-    
+
+    dt_fem = 5e-5
+
     scene = gs.Scene(
         sim_options=gs.options.SimOptions(
-            substeps=20,
+            dt=dt_fem,
+            substeps=40,
             gravity=(0.0, 0.0, -9.81),
         ),
+        coupler_options=gs.options.CouplerOptions(
+            rigid_fem=True,  # CRITIQUE pour contact FEM-Rigid
+        ),
         fem_options=gs.options.FEMOptions(
-            dt=dt_fem,
-            gravity=(0.0, 0.0, -9.81),
             use_implicit_solver=True,
             n_newton_iterations=10,
             n_pcg_iterations=50,
-            damping_alpha=0.02,
-            damping_beta=0.002,
+            damping_alpha=0.5,
+            damping_beta=5e-4,
         ),
         viewer_options=gs.options.ViewerOptions(
             camera_pos=(1.5, 1.5, 0.8),
             camera_lookat=(0.0, 0.0, 0.4),
             camera_fov=45.0,
         ),
-        vis_options=gs.options.VisOptions(
-            show_world_frame=True,
-        ),
         show_viewer=True,
     )
-    
-    # Sol rigide
+
     scene.add_entity(
         morph=gs.morphs.Plane(),
         material=gs.materials.Rigid(),
     )
-    
-    # Paramètres matériaux - Fibre de verre
-    # Réduire E légèrement pour stabilité numérique tout en restant réaliste
-    E = 5e6        # Young's modulus [Pa] (réduit pour stabilité FEM)
-    nu = 0.30      # Poisson's ratio
-    rho = 400.0    # Density [kg/m³] (réduit pour démo)
-    
-    # Frame GOAT lens - deformable beam (FEM Elastic)
-    print("Adding frame to scene...")
+
+    E = 1e5   # Commencer bas, remonter progressivement vers 5e6
+    nu = 0.30
+    rho = 400.0
+
     frame = scene.add_entity(
         morph=gs.morphs.Mesh(
             file=obj_path,
-            pos=(0.0, 0.0, 0.5),
-            euler=(0.0, 0.0, 0.0),
+            pos=(0.0, 0.0, 0.7),
             scale=1.0,
             decimate=False,
             convexify=False,
@@ -189,11 +175,11 @@ def main():
             E=E,
             nu=nu,
             rho=rho,
-            model="linear_corotated",
+            model="linear",   # "linear" plus stable que "linear_corotated" pour déboguer
         ),
         surface=gs.surfaces.Default(
             color=(0.25, 0.50, 1.0),
-            vis_mode="visual",  # Skinning: visualiser le mesh déformé
+            vis_mode="particle",
         ),
     )
     
@@ -234,10 +220,10 @@ def main():
     print()
     
     try:
-        for i in range(10000):
-            # Afficher état tous les 1000 steps
-            if i % 1000 == 0:
-                print(f"Step {i:5d} / 10000")
+        for i in range(1000):  # Reduced steps for testing
+            # Afficher état tous les 100 steps
+            if i % 100 == 0:
+                print(f"Step {i:4d} / 1000")
             
             scene.step()
             
