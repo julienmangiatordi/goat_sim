@@ -1,5 +1,6 @@
 # URDF Technical Reference — GOAT Rover Configuration
 
+**Detailed Physics & Structure Document for Claude AI**
 
 ---
 
@@ -649,21 +650,4 @@ Also scale mass proportionally (~1.5³ = 3.375× for density preservation).
 
 ---
 
-## Notes for Claude AI
 
-**When modifying URDF:**
-1. Preserve XML structure (all opening/closing tags)
-2. Inertia must be physically plausible (I = k×m×L²)
-3. Only change geometry/mass if you have a reason (paper fidelity, testing hypothesis)
-4. Test with `python test_urdf.py` to verify parsing
-5. Changes take effect next time `scene.add_entity()` is called
-
-**When reporting issues to Claude:**
-- Include the link name and joint name
-- Specify line number in URDF file
-- Quote the current XML snippet
-- Explain the desired physics change
-
----
-
-**Version:** 1.0 | URDF Technical Reference | April 2026
