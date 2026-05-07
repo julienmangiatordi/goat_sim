@@ -1,6 +1,5 @@
 # URDF Technical Reference — GOAT Rover Configuration
 
-**Detailed Physics & Structure Document for Claude AI**
 
 ---
 
