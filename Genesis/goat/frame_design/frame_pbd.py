@@ -293,14 +293,26 @@ for i in range(n_total):
     if i < n_conf:
         t = i / (n_conf - 1)
 
+        # Phase 1→2 : Circular → Rover (t in [0, 0.4])
+        # Tendon 1 reste constant (~1.0 normalisé), Tendon 2 monte jusqu'à 1.0+
         if t < 0.4:
             alpha = t / 0.4
-            u1 = 1.0 - 0.6 * alpha
-            u2 = 0.4 * alpha
+            u1 = 1.0                        # T1 stable (long)
+            u2 = 0.0 + 1.0 * alpha         # T2 monte de 0 → 1.0
+
+        # Phase 2→3 : Rover → Reconfiguring (t in [0.4, 0.6])
+        # Les deux commencent à descendre, T2 descend plus vite
+        elif t < 0.6:
+            beta = (t - 0.4) / 0.2
+            u1 = 1.0 - 0.4 * beta          # T1 descend légèrement : 1.0 → 0.6
+            u2 = 1.0 - 0.5 * beta          # T2 descend : 1.0 → 0.5
+
+        # Phase 3→4 : Reconfiguring → Sphere (t in [0.6, 1.0])
+        # Les deux descendent vers 0 (out-of-plane folding)
         else:
-            beta = (t - 0.4) / 0.6
-            u1 = 0.4 - 0.4 * beta
-            u2 = 0.4 + 0.6 * beta
+            gamma = (t - 0.6) / 0.4
+            u1 = 0.6 - 0.6 * gamma         # T1 : 0.6 → 0.0
+            u2 = 0.5 - 0.5 * gamma         # T2 : 0.5 → 0.0
 
         apply_tendon_displacement(u1, u2)
         scene.step()
